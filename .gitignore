@@ -1,0 +1,17 @@
+build/
+__pycache__/
+data/
+
+# Fitxers auxiliars de LaTeX (es regeneren en compilar)
+memoria/*.aux
+memoria/*.log
+memoria/*.toc
+memoria/*.lof
+memoria/*.lot
+memoria/*.out
+memoria/*.synctex.gz
+memoria/*.fls
+memoria/*.fdb_latexmk
+
+# Còpia de la memòria per a Overleaf
+memoria_overleaf.zip
