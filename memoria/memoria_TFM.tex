@@ -1,7 +1,7 @@
-\documentclass[CAT]{TFUOC}%IB: CASTELLÀ, CAT: CATALÀ, ENG: ANGLÈS
+\documentclass[ENG]{TFUOC}%IB: CASTELLÀ, CAT: CATALÀ, ENG: ANGLÈS
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Paquets addicionals
+% Additional packages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{amsmath}
 \usepackage{booktabs}
@@ -11,40 +11,40 @@
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,fit,calc,babel}
 
-% Marca per a dades que l'estudiant ha de completar o confirmar.
-% Quan estigui tot revisat, es pot buidar: \newcommand{\pendent}[1]{#1}
+% Mark for data the student still has to complete or confirm.
+% Once everything is reviewed, it can be emptied: \newcommand{\pendent}[1]{#1}
 \newcommand{\pendent}[1]{\textcolor{red}{#1}}
-% Nota per als apartats que encara no s'han redactat (s'eliminen quan s'omplin)
+% Note for sections not yet written (remove when they are filled in)
 \newcommand{\perfer}[1]{\par\noindent\textcolor{gray}{\itshape\small #1}\par}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Dades del treball
+% Thesis data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\title{Emulació de la distorsió de guitarra elèctrica amb xarxes neuronals}
-\titcrt{Distorsió de guitarra amb xarxes neuronals} %Títol curt per a la capçalera
+\title{Emulation of electric guitar distortion with neural networks}
+\titcrt{Guitar distortion with neural networks} %Short title for the header
 \author{Valentí Ubach Martínez}
-\date{Novembre de 2026}
+\date{November 2026}
 
 \nomPDC{Ismael Benito Altamirano}
 \nomPRA{David Masip Rodó}
-\titulac{Màster universitari en Ciència de Dades}
+\titulac{University Master's Degree in Data Science}
 \area{Data Science}
-\idioma{Català}
+\idioma{English}
 \credits{\pendent{XX}}
-\parcla{emulació d'amplificadors de guitarra, xarxes neuronals, modelatge de caixa negra}
+\parcla{guitar amplifier emulation, neural networks, black-box modelling}
 
 \licenc{ccByNcSa}
-%Possibles llicències: ccByNcNd, ccByNcSa, ccByNc, ccByNd, ccBySa, ccBy, GNU, copyright
+%Possible licences: ccByNcNd, ccByNcSa, ccByNc, ccByNd, ccBySa, ccBy, GNU, copyright
 
 %%%%%%%%%%
-% Resum en l'idioma
+% Abstract in the thesis language (not shown in ENG mode)
 \abstractidioma{
-La distorsió és un element central del so de la guitarra elèctrica. Tradicionalment s'obté amb amplificadors i pedals analògics, i reproduir-la digitalment requereix simular el circuit de cada equip. Aquest Treball Final de Màster aborda el problema des de la ciència de dades: tractar l'efecte com una \emph{caixa negra} i aprendre'n el comportament amb xarxes neuronals a partir de parelles d'enregistraments de guitarra neta i distorsionada.
+Distortion is a defining element of the electric guitar sound. It is traditionally produced by analogue amplifiers and pedals, and reproducing it digitally requires simulating the circuit of each device. This Master's Thesis approaches the problem from a data science perspective: the effect is treated as a \emph{black box} and its behaviour is learned with neural networks from paired recordings of clean and distorted guitar.
 
-El treball crearà un conjunt de dades propi, entrenarà i compararà diversos models neuronals (LSTM i GRU de diferents mides) i els avaluarà amb mètriques objectives sobre dades no vistes. L'objectiu és determinar quin model reprodueix més fidelment la distorsió i quantes dades calen per entrenar-lo.
+The work will create its own dataset, train and compare several neural models (LSTM and GRU networks of different sizes) and evaluate them with objective metrics on unseen data. The goal is to determine which model reproduces the distortion most faithfully and how much data is needed to train it.
 }
 
-% Resum en anglès.
+% Abstract in English.
 \abstractenglish{
 Distortion is a defining element of the electric guitar sound. It is traditionally produced by analogue amplifiers and pedals, and reproducing it digitally requires simulating the circuit of each device. This Master's Thesis approaches the problem from a data science perspective: the effect is treated as a \emph{black box} and its behaviour is learned with neural networks from paired recordings of clean and distorted guitar.
 
@@ -62,168 +62,131 @@ The work will create its own dataset, train and compare several neural models (L
 \listoftables
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Introducció}
+\chapter{Introduction}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Context i justificació del treball}
+\section{Context and justification}
 
-La distorsió és un dels trets que defineixen el so de la guitarra elèctrica. Es produeix quan el senyal de l'instrument passa per un sistema no lineal (una etapa de vàlvules saturada, un pedal de díodes o un preamplificador d'estat sòlid) que n'altera la forma d'ona, hi afegeix harmònics i comprimeix la dinàmica. Aquest comportament depèn de l'amplitud i també de la història recent del senyal, cosa que el converteix en un sistema dinàmic no lineal i difícil de modelar~\cite{pakarinen2009}.
+Distortion is one of the defining features of the electric guitar sound. It occurs when the instrument signal passes through a nonlinear system (an overdriven valve stage, a diode pedal or a solid-state preamplifier) that alters its waveform, adds harmonics and compresses its dynamics. This behaviour depends on the amplitude and also on the recent history of the signal, which makes it a nonlinear dynamic system that is hard to model~\cite{pakarinen2009}.
 
-Tradicionalment, la distorsió s'ha reproduït digitalment simulant el circuit de cada equip, una tasca que requereix molt coneixement i feina d'enginyeria~\cite{pakarinen2009,vanhatalo2022}. Durant els darrers anys, les xarxes neuronals han permès una alternativa: aprendre el comportament de l'equip directament a partir de dades, és a dir, de parelles d'enregistraments de guitarra neta i distorsionada. Amb aquest enfocament \emph{de caixa negra} s'han aconseguit emulacions que en proves d'escolta són difícils de distingir de l'original~\cite{wright2019,wright2020}, i avui és la tecnologia de diversos productes comercials i eines de codi obert~\cite{nam}.
+Traditionally, distortion has been reproduced digitally by simulating the circuit of each device, a task that requires a great deal of expertise and engineering work~\cite{pakarinen2009,vanhatalo2022}. In recent years, neural networks have made an alternative possible: learning the behaviour of the device directly from data, that is, from pairs of clean and distorted guitar recordings. With this \emph{black-box} approach, emulations have been achieved that are hard to tell apart from the original in listening tests~\cite{wright2019,wright2020}, and today it is the technology behind several commercial products and open-source tools~\cite{nam}.
 
-Des del punt de vista de la ciència de dades, el problema és un cas complet d'aprenentatge supervisat sobre sèries temporals: inclou la captura de les dades, el seu preprocessament i l'entrenament, l'avaluació i la comparació de models. Té interès per a la recerca en processament d'àudio, per a la indústria de la tecnologia musical i per als músics, que poden accedir a sons d'equips cars o inaccessibles amb un ordinador i una interfície d'àudio.
+From a data science point of view, the problem is a complete case of supervised learning on time series: it covers data capture, preprocessing, and the training, evaluation and comparison of models. It is of interest to audio processing research, to the music technology industry and to musicians, who can access the sound of expensive or unavailable equipment with a computer and an audio interface.
 
-Com a punt de partida, ja s'ha construït un prototip senzill: s'ha gravat guitarra a REAPER amb el senyal net i la sortida d'un plugin simulador d'amplificador i s'ha entrenat una xarxa LSTM amb PyTorch~\cite{paszke2019} que genera guitarra distorsionada a partir del senyal net. El prototip demostra que la idea és viable, però no s'ha avaluat amb rigor: l'error només s'ha mesurat sobre les dades d'entrenament i el model no s'ha comparat amb cap alternativa. El TFM vol fer aquest pas.
+As a starting point, a simple prototype has already been built: guitar was recorded in REAPER together with the clean signal and the output of an amplifier simulator plugin, and an LSTM network was trained with PyTorch~\cite{paszke2019} that generates distorted guitar from the clean signal. The prototype shows that the idea is feasible, but it has not been rigorously evaluated: the error was only measured on the training data and the model was not compared with any alternative. This thesis aims to take that step.
 
-\section{Motivació personal}
+\section{Personal motivation}
 
-La motivació d'aquest treball neix de la intersecció de dues aficions: la música i la programació aplicada a l'anàlisi de dades i la intel·ligència artificial. Com a estudiant del màster, m'atrau la possibilitat de fer servir xarxes neuronals per emular el funcionament d'un amplificador de guitarra, un problema que conec bé com a músic. També m'atrau perquè em permet recórrer totes les fases d'un projecte de ciència de dades amb un resultat que es pot \emph{escoltar}: generar les dades jo mateix, entrenar models i comprovar, escoltant-los, si funcionen.
+The motivation for this work comes from the intersection of two of my interests: music and programming applied to data analysis and artificial intelligence. As a student of the master's programme, I am drawn to the possibility of using neural networks to emulate how a guitar amplifier works, a problem I know well as a musician. It also appeals to me because it lets me go through every phase of a data science project with a result that can be \emph{heard}: generating the data myself, training models and checking, by listening to them, whether they work.
 
-\section{Objectius del treball}
+\section{Objectives}
 
-\subsection{Hipòtesi}
+\subsection{Hypothesis}
 
-\textit{Una xarxa neuronal recurrent petita, entrenada amb pocs minuts d'àudio gravat a casa, pot reproduir amb fidelitat la distorsió d'un simulador d'amplificador sobre dades que no ha vist durant l'entrenament.}
+\textit{A small recurrent neural network, trained with a few minutes of audio recorded at home, can faithfully reproduce the distortion of an amplifier simulator on data it has not seen during training.}
 
-\subsection{Objectius parcials}
+\subsection{Specific objectives}
 
 \begin{enumerate}[nosep,label=\textbf{O\arabic*.}]
-    \item Crear un conjunt de dades de guitarra neta i distorsionada, ben alineat i dividit en entrenament, validació i test.
-    \item Entrenar diversos models neuronals (com a mínim LSTM i GRU de diferents mides) amb un procés reproduïble.
-    \item Avaluar-los amb mètriques objectives sobre dades no vistes i comparar-los.
+    \item Create a dataset of clean and distorted guitar, properly aligned and split into training, validation and test sets.
+    \item Train several neural models (at least LSTM and GRU networks of different sizes) with a reproducible process.
+    \item Evaluate them with objective metrics on unseen data and compare them.
 \end{enumerate}
 
-Aquests objectius es concreten en les preguntes de recerca següents:
+These objectives translate into the following research questions:
 \begin{itemize}[nosep]
-    \item \textbf{PR1.} Quina quantitat de dades cal perquè el model generalitzi?
-    \item \textbf{PR2.} Quina arquitectura i mida de model reprodueixen millor la distorsió?
+    \item \textbf{RQ1.} How much data is needed for the model to generalise?
+    \item \textbf{RQ2.} Which model architecture and size best reproduce the distortion?
 \end{itemize}
 
-\subsection{Abast}
+\subsection{Scope}
 
 
 
-\section{Impacte en sostenibilitat, ètic-social i de diversitat}
+\section{Sustainability, ethical-social and diversity impact}
 \label{s:etic}
 
-Aquest apartat analitza el treball segons les tres dimensions de la competència de Compromís Ètic i Global (CCEG) de la UOC i la seva relació amb els Objectius de Desenvolupament Sostenible (ODS)~\cite{onu2015}.
+This section analyses the work according to the three dimensions of the UOC Ethical and Global Commitment competence (CCEG) and its relationship with the Sustainable Development Goals (SDGs)~\cite{onu2015}.
 
-\paragraph{Sostenibilitat.} L'entrenament de models d'aprenentatge profund consumeix energia~\cite{strubell2019}. En aquest treball l'impacte és baix perquè els models i les dades són petits, i es reduirà prioritzant els models compactes i limitant el nombre d'experiments. A més, un amplificador virtual pot substituir part dels equips físics, cosa que contribueix a l'\textbf{ODS 12} (producció i consum responsables).
+\paragraph{Sustainability.} Training deep learning models consumes energy~\cite{strubell2019}. In this work the impact is low because the models and the data are small, and it will be reduced further by favouring compact models and limiting the number of experiments. In addition, a virtual amplifier can replace part of the physical equipment, which contributes to \textbf{SDG 12} (responsible consumption and production).
 
-\paragraph{Comportament ètic i responsabilitat social.} El principal risc ètic és la \emph{propietat intel·lectual}: el modelatge de caixa negra pot reproduir el so d'equips comercials. Per això, els models s'utilitzaran amb finalitats acadèmiques i no es distribuiran models que imitin productes comercials. El codi es publicarà amb una llicència oberta, en línia amb l'\textbf{ODS 4} (educació de qualitat) i l'\textbf{ODS 9} (indústria, innovació i infraestructura).
+\paragraph{Ethical behaviour and social responsibility.} The main ethical risk is \emph{intellectual property}: black-box modelling can reproduce the sound of commercial equipment. For this reason, the models will be used for academic purposes only and no models imitating commercial products will be distributed. The code will be published under an open licence, in line with \textbf{SDG 4} (quality education) and \textbf{SDG 9} (industry, innovation and infrastructure).
 
-\paragraph{Protecció de dades.} Les dades són enregistraments d'àudio de l'instrument fets per l'estudiant i no contenen cap dada personal, de manera que no cal aplicar el Reglament General de Protecció de Dades~\cite{rgpd2016} ni el model de Protocol Ètic de la UOC. Si més endavant es fes una prova d'escolta amb participants, s'emplenaria aquest protocol abans de fer-la.
+\paragraph{Data protection.} The data are audio recordings of the instrument made by the student and contain no personal data, so neither the General Data Protection Regulation~\cite{rgpd2016} nor the UOC Ethics Protocol template needs to be applied. If a listening test with participants were carried out later, the protocol would be completed beforehand.
 
-\section{Enfocament i mètode seguit}
+\section{Approach and method}
 
-\subsection{Estratègia de recerca}
+\subsection{Research strategy}
 
-Seguint la classificació d'Oates~\cite{oates2006}, el treball combina dues estratègies de recerca:
+Following Oates' classification~\cite{oates2006}, the work combines two research strategies:
 \begin{itemize}[nosep]
-    \item \textbf{Disseny i creació}, per construir els artefactes: el conjunt de dades i els models.
-    \item \textbf{Experiment}, per respondre les preguntes de recerca comparant models entrenats en condicions controlades.
+    \item \textbf{Design and creation}, to build the artefacts: the dataset and the models.
+    \item \textbf{Experiment}, to answer the research questions by comparing models trained under controlled conditions.
 \end{itemize}
-Les tècniques de generació de dades seran la \textbf{recerca basada en documents}, per a l'estat de l'art, i la generació de dades \textbf{quantitatives} a partir dels experiments. La mètrica principal serà l'ESR (\emph{error-to-signal ratio})~\cite{wright2019}:
+The data generation methods will be \textbf{document-based research}, for the state of the art, and the generation of \textbf{quantitative} data from the experiments. The main metric will be the ESR (\emph{error-to-signal ratio})~\cite{wright2019}:
 \begin{equation}
 \label{eq:esr}
 \mathrm{ESR} = \frac{\sum_{n}\big(y[n]-\hat{y}[n]\big)^2}{\sum_{n} y[n]^2},
 \end{equation}
-on $y$ és la sortida real de l'equip i $\hat{y}$ la predicció del model. També es mesurarà el temps de càlcul dels models.
+where $y$ is the actual output of the device and $\hat{y}$ the model prediction. The computation time of the models will also be measured.
 
-Les eines previstes són REAPER per a la captura i Python, amb PyTorch~\cite{paszke2019}, NumPy i Matplotlib, per a l'entrenament i l'anàlisi.
+The planned tools are REAPER for capture and Python, with PyTorch~\cite{paszke2019}, NumPy and Matplotlib, for training and analysis.
 
-\subsection{Metodologia de treball}
+\subsection{Work methodology}
 
-Es van considerar tres estratègies: (1) utilitzar una eina existent com Neural Amp Modeler~\cite{nam}, que seria ràpid però amagaria les decisions de disseny; (2) reproduir un treball publicat amb les seves dades~\cite{wright2020}, que deixaria fora la captura de dades pròpies; i (3) evolucionar el prototip propi cap a un estudi sistemàtic. S'ha triat la tercera perquè cobreix tot el procés de ciència de dades, des de la captura fins a la presentació de resultats, i aprofita la feina feta.
+Three strategies were considered: (1) using an existing tool such as Neural Amp Modeler~\cite{nam}, which would be fast but would hide the design decisions; (2) reproducing a published work with its data~\cite{wright2020}, which would leave out the capture of our own data; and (3) evolving our own prototype into a systematic study. The third was chosen because it covers the whole data science process, from capture to the presentation of results, and builds on the work already done.
 
-El desenvolupament seguirà una metodologia \textbf{iterativa basada en prototips}: cada iteració (alineada amb les PEC) produeix un resultat avaluable que orienta la següent. Els recursos necessaris són un ordinador amb GPU, una interfície d'àudio, una guitarra elèctrica i el programari indicat, tot ja disponible.
+Development will follow an \textbf{iterative, prototype-based} methodology: each iteration (aligned with the continuous assessment activities, PEC) produces an evaluable result that guides the next one. The resources needed are a computer with a GPU, an audio interface, an electric guitar and the software mentioned above, all of which are already available.
 
-\section{Planificació del treball}
+\section{Brief summary of products obtained}
 
-La taula~\ref{tab:tasques} recull les tasques previstes, les seves dates i dependències. \pendent{Les dates s'han d'ajustar al calendari oficial del semestre.}
-
-\begin{table}[H]
-\centering
-\caption{Planificació de les tasques del projecte.}
-\label{tab:tasques}
-\small
-\begin{tabularx}{\textwidth}{lXlll}
-\toprule
-\textbf{Id} & \textbf{Tasca} & \textbf{Inici} & \textbf{Fi} & \textbf{Depèn de} \\
-\midrule
-\multicolumn{5}{l}{\textit{PEC1 -- Proposta}} \\
-T1 & Definició del treball i redacció de la proposta & 19/10/2026 & 08/11/2026 & -- \\
-\midrule
-\multicolumn{5}{l}{\textit{PEC2 -- Estat de l'art}} \\
-T2 & Cerca i lectura de bibliografia & 09/11/2026 & 22/11/2026 & T1 \\
-T3 & Redacció de l'estat de l'art & 16/11/2026 & 29/11/2026 & T2 \\
-\midrule
-\multicolumn{5}{l}{\textit{PEC3 -- Implementació}} \\
-T4 & Captura i preparació del conjunt de dades & 30/11/2026 & 13/12/2026 & T3 \\
-T5 & Entrenament i comparació de models & 07/12/2026 & 03/01/2027 & T4 \\
-\midrule
-\multicolumn{5}{l}{\textit{PEC4 -- Memòria}} \\
-T6 & Redacció de la memòria final & 04/01/2027 & 24/01/2027 & T5 \\
-\midrule
-\multicolumn{5}{l}{\textit{PEC5 -- Defensa}} \\
-T7 & Presentació i defensa & 25/01/2027 & 07/02/2027 & T6 \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\section{Breu sumari de productes obtinguts}
-
-\section{Breu descripció dels altres capítols de la memòria}
-
-\section{Declaració sobre l'ús d'intel·ligència artificial generativa}
-
-\pendent{[Revisa aquest apartat perquè reflecteixi exactament l'ús que n'has fet i comenta'l amb el tutor/a.]} S'ha utilitzat l'assistent Claude (Anthropic) per analitzar el prototip, cercar bibliografia i redactar un primer esborrany de la proposta i de l'estat de l'art. L'estudiant ha revisat i validat tots els continguts i les referències, i n'assumeix la responsabilitat.
+\section{Brief description of the remaining chapters}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Capítol 2
+% Chapter 2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Estat de l'art}
+\chapter{State of the art}
 \label{c:estat}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Aquest capítol revisa com s'ha abordat fins ara l'emulació digital de la distorsió de guitarra, amb èmfasi en els mètodes basats en dades. Comença descrivint com s'ha fet la revisió (secció~\ref{s:revisio}) i les característiques del sistema que es vol modelar (secció~\ref{s:distorsio}). A continuació presenta les famílies clàssiques de modelatge (secció~\ref{s:va}) i, amb més detall, els models neuronals (secció~\ref{s:neural}), les funcions de pèrdua i mètriques d'avaluació (secció~\ref{s:avaluacio}), les dades d'entrenament (secció~\ref{s:dades}), l'execució en temps real (secció~\ref{s:tempsreal}) i les solucions disponibles al mercat (secció~\ref{s:mercat}). Acaba amb una síntesi dels buits detectats i de com s'hi posiciona aquest TFM (secció~\ref{s:sintesi}).
+This chapter reviews how the digital emulation of guitar distortion has been approached so far, with an emphasis on data-driven methods. It begins by describing how the review was carried out (Section~\ref{s:revisio}) and the characteristics of the system to be modelled (Section~\ref{s:distorsio}). It then presents the classic modelling families (Section~\ref{s:va}) and, in more detail, neural models (Section~\ref{s:neural}), loss functions and evaluation metrics (Section~\ref{s:avaluacio}), training data (Section~\ref{s:dades}), real-time execution (Section~\ref{s:tempsreal}) and the solutions available on the market (Section~\ref{s:mercat}). It ends with a synthesis of the gaps identified and how this thesis is positioned with respect to them (Section~\ref{s:sintesi}).
 
-\section{Metodologia de la revisió}
+\section{Review methodology}
 \label{s:revisio}
 
-D'acord amb Oates~\cite{oates2006}, l'estat de l'art s'ha elaborat amb una estratègia d'enquesta bibliogràfica (\emph{survey}) que fa servir la recerca basada en documents com a tècnica de generació de dades. La cerca s'ha fet en tres passos:
+Following Oates~\cite{oates2006}, the state of the art was produced with a literature survey strategy that uses document-based research as the data generation method. The search was carried out in three steps:
 \begin{enumerate}[nosep]
-    \item \textbf{Punt de partida.} Dues revisions de referència~\cite{pakarinen2009,vanhatalo2022} han servit per identificar els autors, grups i congressos principals de l'àmbit.
-    \item \textbf{Cerca sistemàtica.} S'ha cercat a Google Scholar, Web of Science, IEEE Xplore, arXiv i l'arxiu de la conferència DAFx (\emph{Digital Audio Effects}) amb combinacions de les paraules clau \emph{guitar amplifier modelling}, \emph{distortion}, \emph{virtual analog}, \emph{black-box}, \emph{neural network}, \emph{LSTM}, \emph{WaveNet}, \emph{real-time} i \emph{audio effects}.
-    \item \textbf{Bola de neu.} S'han seguit les referències i les citacions dels treballs més rellevants, especialment els del grup d'acústica de la Universitat Aalto i del Centre for Digital Music de la Queen Mary University of London.
+    \item \textbf{Starting point.} Two reference reviews~\cite{pakarinen2009,vanhatalo2022} were used to identify the main authors, groups and conferences in the field.
+    \item \textbf{Systematic search.} Google Scholar, Web of Science, IEEE Xplore, arXiv and the archive of the DAFx (\emph{Digital Audio Effects}) conference were searched with combinations of the keywords \emph{guitar amplifier modelling}, \emph{distortion}, \emph{virtual analog}, \emph{black-box}, \emph{neural network}, \emph{LSTM}, \emph{WaveNet}, \emph{real-time} and \emph{audio effects}.
+    \item \textbf{Snowballing.} The references and citations of the most relevant works were followed, especially those of the acoustics group at Aalto University and the Centre for Digital Music at Queen Mary University of London.
 \end{enumerate}
-S'han prioritzat els articles revisats per parells en revistes i congressos dels darrers deu anys, sense excloure treballs fonamentals anteriors. Les preimpressions (arXiv), el programari i les pàgines web de fabricants s'han utilitzat només per descriure eines i productes, o resultats molt recents encara no publicats en una revista.
+Peer-reviewed journal and conference articles from the last ten years were prioritised, without excluding earlier foundational works. Preprints (arXiv), software and manufacturers' web pages were used only to describe tools and products, or very recent results not yet published in a journal.
 
-\section{La distorsió de guitarra com a sistema no lineal amb memòria}
+\section{Guitar distortion as a nonlinear system with memory}
 \label{s:distorsio}
 
-La cadena de so d'una guitarra elèctrica distorsionada sol estar formada per un o més pedals d'efectes, el preamplificador, l'etapa de potència, el transformador de sortida i la caixa d'altaveus~\cite{pakarinen2009}. La distorsió apareix quan algun d'aquests elements treballa fora de la seva zona lineal: els díodes d'un pedal de \emph{overdrive} que retallen el senyal, les vàlvules d'un preamplificador amb guany alt, o la saturació de l'etapa de potència. Des del punt de vista del processament de senyal, aquest sistema té tres propietats que en dificulten el modelatge~\cite{pakarinen2009,yeh2009}:
+The signal chain of a distorted electric guitar usually consists of one or more effects pedals, the preamplifier, the power stage, the output transformer and the speaker cabinet~\cite{pakarinen2009}. Distortion appears when one of these elements operates outside its linear region: the diodes of an \emph{overdrive} pedal that clip the signal, the valves of a high-gain preamplifier, or the saturation of the power stage. From a signal processing point of view, this system has three properties that make it hard to model~\cite{pakarinen2009,yeh2009}:
 \begin{itemize}[nosep]
-    \item \textbf{No linealitat.} La sortida no és proporcional a l'entrada: apareixen harmònics i productes d'intermodulació, i el resultat depèn molt del nivell del senyal.
-    \item \textbf{Memòria.} Els condensadors i els filtres del circuit (per exemple, la xarxa de to) fan que la sortida depengui de l'entrada passada. Alguns fenòmens, com la caiguda de tensió de l'alimentació (\emph{sag}), tenen constants de temps de desenes de mil·lisegons.
-    \item \textbf{Generació d'aliàsing.} Com que la no linealitat crea harmònics per sobre de la freqüència de Nyquist, una implementació digital ingènua els replega dins la banda audible. Per evitar-ho es fa servir el sobremostreig, que encareix el càlcul.
+    \item \textbf{Nonlinearity.} The output is not proportional to the input: harmonics and intermodulation products appear, and the result depends strongly on the signal level.
+    \item \textbf{Memory.} The capacitors and filters of the circuit (for example, the tone stack) make the output depend on past input. Some phenomena, such as the power supply voltage drop (\emph{sag}), have time constants of tens of milliseconds.
+    \item \textbf{Aliasing.} Because the nonlinearity creates harmonics above the Nyquist frequency, a naive digital implementation folds them back into the audible band. Oversampling is used to avoid this, which increases the computational cost.
 \end{itemize}
-Aquestes propietats expliquen per què un model sense memòria (una simple funció de transferència estàtica) no és suficient, i per què el sistema s'ha de tractar com un sistema dinàmic no lineal.
+These properties explain why a memoryless model (a simple static transfer function) is not enough, and why the system must be treated as a nonlinear dynamic system.
 
-Segons on i com es produeix la saturació, se solen distingir diversos tipus de distorsió~\cite{pakarinen2009,yeh2009}:
+Depending on where and how saturation occurs, several types of distortion are usually distinguished~\cite{pakarinen2009,yeh2009}:
 \begin{itemize}[nosep]
-    \item \textbf{\emph{Overdrive}}: retall suau (\emph{soft clipping}), típicament amb díodes al llaç de realimentació d'un amplificador operacional. El senyal se satura de manera gradual i conserva part de la dinàmica de la interpretació.
-    \item \textbf{Distorsió}: retall dur (\emph{hard clipping}), típicament amb díodes connectats a massa. El resultat és més comprimit i ric en harmònics.
-    \item \textbf{\emph{Fuzz}}: saturació extrema de transistors, amb efectes de polarització que depenen del nivell recent del senyal i que, per tant, tenen memòria llarga.
-    \item \textbf{Distorsió d'amplificador}: saturació de les etapes de vàlvules del preamplificador i de l'etapa de potència, combinada amb la resposta en freqüència de la xarxa de to i del transformador.
+    \item \textbf{\emph{Overdrive}}: soft clipping, typically with diodes in the feedback loop of an operational amplifier. The signal saturates gradually and retains part of the dynamics of the performance.
+    \item \textbf{Distortion}: hard clipping, typically with diodes connected to ground. The result is more compressed and rich in harmonics.
+    \item \textbf{\emph{Fuzz}}: extreme transistor saturation, with biasing effects that depend on the recent signal level and therefore have long memory.
+    \item \textbf{Amplifier distortion}: saturation of the valve stages of the preamplifier and the power stage, combined with the frequency response of the tone stack and the transformer.
 \end{itemize}
-Com a il·lustració, el retall suau i el retall dur es poden aproximar sense memòria amb funcions com $y=\tanh(g\,x)$ i $y=\max(-1,\min(1,g\,x))$, on $g$ és el guany. Els equips reals, però, envolten aquestes no linealitats de filtres i d'elements amb estat, i això és el que els models basats en dades han d'aprendre.
+As an illustration, soft and hard clipping can be approximated without memory by functions such as $y=\tanh(g\,x)$ and $y=\max(-1,\min(1,g\,x))$, where $g$ is the gain. Real devices, however, surround these nonlinearities with filters and stateful elements, and this is what data-driven models have to learn.
 
-\section{Modelatge d'àudio virtual analògic}
+\section{Virtual analogue audio modelling}
 \label{s:va}
 
-L'emulació digital d'equips analògics d'àudio s'anomena \emph{modelatge virtual analògic}. Les tècniques se solen classificar segons quant coneixement del circuit utilitzen~\cite{pakarinen2009,vanhatalo2022}. La figura~\ref{fig:taxonomia} en resumeix la taxonomia, que s'utilitza per organitzar la resta del capítol.
+The digital emulation of analogue audio equipment is called \emph{virtual analogue modelling}. Techniques are usually classified according to how much knowledge of the circuit they use~\cite{pakarinen2009,vanhatalo2022}. Figure~\ref{fig:taxonomia} summarises the taxonomy, which is used to organise the rest of the chapter.
 
 \begin{figure}[!htbp]
 \centering
@@ -233,58 +196,58 @@ L'emulació digital d'equips analògics d'àudio s'anomena \emph{modelatge virtu
     cat/.style={draw=black!60, fill=black!4, rounded corners=2pt, align=center, minimum height=0.8cm, text width=3.6cm},
     leaf/.style={align=left, text width=3.6cm, font=\scriptsize},
     arr/.style={-{Stealth[length=1.8mm]}, black!60}]
-\node[root] (r) at (0,0) {\textbf{Modelatge virtual analògic}};
-\node[cat] (w) at (-5.2,-1.5) {\textbf{Caixa blanca}\\(circuit conegut)};
-\node[cat] (g) at (0,-1.5) {\textbf{Caixa grisa}\\(estructura + dades)};
-\node[cat] (b) at (5.2,-1.5) {\textbf{Caixa negra}\\(només dades)};
+\node[root] (r) at (0,0) {\textbf{Virtual analogue modelling}};
+\node[cat] (w) at (-5.2,-1.5) {\textbf{White box}\\(known circuit)};
+\node[cat] (g) at (0,-1.5) {\textbf{Grey box}\\(structure + data)};
+\node[cat] (b) at (5.2,-1.5) {\textbf{Black box}\\(data only)};
 \draw[arr] (r) -- (w); \draw[arr] (r) -- (g); \draw[arr] (r) -- (b);
-\node[leaf, below=0.15cm of w] (wl) {$\bullet$ Equacions d'estat i mètode nodal DK~\cite{yeh2010}\\$\bullet$ Filtres d'ona digitals (WDF)~\cite{werner2015}\\$\bullet$ Simulació SPICE (fora de línia)};
-\node[leaf, below=0.15cm of g] (gl) {$\bullet$ Models orientats a blocs (Wiener, Hammerstein)~\cite{eichas2017,novak2010}\\$\bullet$ Models neuronals híbrids i DSP diferenciable~\cite{parker2019,miklanek2023,yeh2024ddsp}};
-\node[leaf, below=0.15cm of b] (bl) {$\bullet$ Convolucionals: WaveNet, TCN~\cite{damskagg2019,steinmetz2022}\\$\bullet$ Recurrents: LSTM, GRU~\cite{wright2019,wright2020}\\$\bullet$ Espai d'estats (S4)~\cite{comunita2025}};
-\node[draw=red!60!black, dashed, rounded corners=2pt, fit=(bl), inner sep=3pt, label={[font=\scriptsize\itshape, text=red!60!black]below:focus d'aquest TFM}] {};
+\node[leaf, below=0.15cm of w] (wl) {$\bullet$ State-space equations and DK nodal method~\cite{yeh2010}\\$\bullet$ Wave digital filters (WDF)~\cite{werner2015}\\$\bullet$ SPICE simulation (offline)};
+\node[leaf, below=0.15cm of g] (gl) {$\bullet$ Block-oriented models (Wiener, Hammerstein)~\cite{eichas2017,novak2010}\\$\bullet$ Hybrid neural models and differentiable DSP~\cite{parker2019,miklanek2023,yeh2024ddsp}};
+\node[leaf, below=0.15cm of b] (bl) {$\bullet$ Convolutional: WaveNet, TCN~\cite{damskagg2019,steinmetz2022}\\$\bullet$ Recurrent: LSTM, GRU~\cite{wright2019,wright2020}\\$\bullet$ State space (S4)~\cite{comunita2025}};
+\node[draw=red!60!black, dashed, rounded corners=2pt, fit=(bl), inner sep=3pt, label={[font=\scriptsize\itshape, text=red!60!black]below:focus of this thesis}] {};
 \end{tikzpicture}
-\caption{Taxonomia de les tècniques de modelatge virtual analògic.}
+\caption{Taxonomy of virtual analogue modelling techniques.}
 \label{fig:taxonomia}
 \end{figure}
 
-\subsection{Modelatge de caixa blanca}
+\subsection{White-box modelling}
 
-Els models de caixa blanca parteixen de l'esquema del circuit i dels models físics de cada component (resistències, condensadors, díodes, transistors i vàlvules). A partir d'aquí, plantegen el sistema d'equacions diferencials i el resolen numèricament. Dues famílies destaquen en l'àmbit de l'àudio. La primera és la formulació en espai d'estats generada automàticament a partir de l'anàlisi nodal, l'anomenat mètode DK, que Yeh \emph{et al.} van aplicar a pedals i amplificadors de vàlvules~\cite{yeh2009,yeh2010}. La segona són els filtres d'ona digitals (\emph{Wave Digital Filters}, WDF), que conserven l'estructura modular del circuit i que s'han estès a topologies arbitràries~\cite{werner2015}.
+White-box models start from the circuit schematic and the physical models of each component (resistors, capacitors, diodes, transistors and valves). From there, they set up the system of differential equations and solve it numerically. Two families stand out in audio. The first is the state-space formulation generated automatically from nodal analysis, the so-called DK method, which Yeh \emph{et al.} applied to pedals and valve amplifiers~\cite{yeh2009,yeh2010}. The second is wave digital filters (WDF), which preserve the modular structure of the circuit and have been extended to arbitrary topologies~\cite{werner2015}.
 
-L'avantatge principal d'aquests models és la fidelitat i la interpretabilitat: cada paràmetre correspon a un component real i els controls de l'equip es reprodueixen de manera natural. Els inconvenients són que cal conèixer l'esquema i els valors dels components, que el modelatge de les vàlvules és complex i que el cost computacional creix ràpidament amb el nombre d'elements no lineals~\cite{pakarinen2009}. Per això, en la pràctica és difícil escalar-los a molts equips diferents.
+The main advantage of these models is their fidelity and interpretability: each parameter corresponds to a real component and the controls of the device are reproduced naturally. The drawbacks are that the schematic and component values must be known, that modelling valves is complex and that the computational cost grows quickly with the number of nonlinear elements~\cite{pakarinen2009}. In practice, this makes them hard to scale to many different devices.
 
-\subsection{Modelatge de caixa grisa}
+\subsection{Grey-box modelling}
 
-Els models de caixa grisa combinen una estructura simplificada inspirada en el circuit amb paràmetres que s'ajusten a partir de mesures. Els més habituals són els \emph{models orientats a blocs}, que encadenen filtres lineals i funcions no lineals estàtiques: un filtre seguit d'una no linealitat (model de Wiener), una no linealitat seguida d'un filtre (model de Hammerstein) o la combinació de tots dos. Eichas \emph{et al.} van aplicar aquesta estructura a amplificadors de guitarra, ajustant-ne els paràmetres amb optimització iterativa a partir de mesures de l'equip real~\cite{eichas2017}. Per identificar aquests models s'han proposat senyals de mesura específics, com el sinus escombrat exponencial, que permet separar les contribucions de cada harmònic~\cite{novak2010}.
+Grey-box models combine a simplified structure inspired by the circuit with parameters fitted from measurements. The most common are \emph{block-oriented models}, which chain linear filters and static nonlinear functions: a filter followed by a nonlinearity (Wiener model), a nonlinearity followed by a filter (Hammerstein model) or a combination of both. Eichas \emph{et al.} applied this structure to guitar amplifiers, fitting its parameters with iterative optimisation from measurements of the real device~\cite{eichas2017}. Specific measurement signals have been proposed to identify these models, such as the exponential swept sine, which makes it possible to separate the contribution of each harmonic~\cite{novak2010}.
 
-Aquests models són compactes i eficients, però la seva capacitat expressiva està limitada per l'estructura triada: els comportaments que no encaixen en la cascada de blocs (per exemple, dependències de l'estat com el \emph{sag}) són difícils de capturar.
+These models are compact and efficient, but their expressive power is limited by the chosen structure: behaviours that do not fit the cascade of blocks (for example, state dependencies such as \emph{sag}) are hard to capture.
 
-\subsection{Modelatge de caixa negra}
+\subsection{Black-box modelling}
 
-Els models de caixa negra aprenen la relació entre l'entrada i la sortida del sistema sense fer servir cap informació sobre el circuit. Durant molt de temps, els mètodes clàssics d'aquest tipus requerien massa paràmetres per representar distorsions fortes~\cite{pakarinen2009,schmitz2018}. Les xarxes neuronals han superat aquesta limitació: són aproximadors universals amb un cost que es pot controlar fixant la mida del model, i s'entrenen amb mètodes d'optimització estàndard. La secció següent n'analitza les variants.
+Black-box models learn the relationship between the input and the output of the system without using any information about the circuit. For a long time, classic methods of this kind required too many parameters to represent strong distortion~\cite{pakarinen2009,schmitz2018}. Neural networks have overcome this limitation: they are universal approximators whose cost can be controlled by fixing the model size, and they are trained with standard optimisation methods. The next section analyses their variants.
 
-\section{Models neuronals per a l'emulació de la distorsió}
+\section{Neural models for distortion emulation}
 \label{s:neural}
 
-En pocs anys, l'emulació neuronal ha passat de ser una línia de recerca a ser la tecnologia de nombrosos productes comercials~\cite{vanhatalo2022}. El plantejament comú és un problema d'aprenentatge supervisat: donades les seqüències d'entrada $x[n]$ (senyal net) i de sortida $y[n]$ (senyal processat per l'equip), s'entrena una xarxa $f_\theta$ perquè $\hat{y}[n]=f_\theta(x[n], x[n-1], \dots)$ minimitzi una funció de pèrdua. Les arquitectures es diferencien sobretot en com representen la memòria del sistema.
+In a few years, neural emulation has gone from being a research topic to being the technology behind many commercial products~\cite{vanhatalo2022}. The common formulation is a supervised learning problem: given the input sequence $x[n]$ (clean signal) and the output sequence $y[n]$ (signal processed by the device), a network $f_\theta$ is trained so that $\hat{y}[n]=f_\theta(x[n], x[n-1], \dots)$ minimises a loss function. Architectures differ mainly in how they represent the memory of the system.
 
-\subsection{Models convolucionals}
+\subsection{Convolutional models}
 
-Els primers resultats d'alta qualitat es van obtenir amb xarxes convolucionals inspirades en WaveNet~\cite{vandenoord2016}, que encadenen convolucions dilatades i causals per obtenir un camp receptiu llarg amb pocs paràmetres. Amb $L$ capes de nucli $k$ i dilatacions $d_i$, el camp receptiu és
+The first high-quality results were obtained with convolutional networks inspired by WaveNet~\cite{vandenoord2016}, which stack dilated causal convolutions to obtain a long receptive field with few parameters. With $L$ layers of kernel size $k$ and dilations $d_i$, the receptive field is
 \begin{equation}
 R = 1 + (k-1)\sum_{i=1}^{L} d_i ,
 \end{equation}
-de manera que, per exemple, deu capes amb $k=3$ i dilatacions $1, 2, 4, \dots, 512$ cobreixen 2\,047 mostres, uns 46\,ms a 44{,}1\,kHz. La memòria del model està limitada per aquest valor. Damskägg \emph{et al.} van adaptar aquesta arquitectura per emular un preamplificador de vàlvules, eliminant la part generativa i fent que la xarxa predigui directament la mostra de sortida, i en va avaluar la qualitat amb proves d'escolta~\cite{damskagg2019}. Poc després, el mateix grup va mostrar que el model podia emular pedals de distorsió en temps real~\cite{damskagg2019smc}.
+so that, for example, ten layers with $k=3$ and dilations $1, 2, 4, \dots, 512$ cover 2\,047 samples, about 46\,ms at 44.1\,kHz. The memory of the model is limited by this value. Damskägg \emph{et al.} adapted this architecture to emulate a valve preamplifier, removing the generative part and making the network predict the output sample directly, and evaluated its quality with listening tests~\cite{damskagg2019}. Shortly afterwards, the same group showed that the model could emulate distortion pedals in real time~\cite{damskagg2019smc}.
 
-En paral·lel, Martínez Ramírez i Reiss van proposar models d'extrem a extrem basats en convolucions i capes denses per a efectes no lineals~\cite{martinez2019}. També van comparar diverses arquitectures sobre efectes de tipus divers, incloent-hi distorsions i compressors~\cite{martinez2020}. Més endavant, les xarxes convolucionals temporals (TCN) es van optimitzar per al temps real, amb models molt petits que funcionen en CPU~\cite{steinmetz2022}. Comunità \emph{et al.} van observar que ampliar el camp receptiu d'aquestes xarxes no és suficient per a efectes amb memòria llarga, com els \emph{fuzz} i els compressors. Ho van resoldre amb una modulació de les característiques variable en el temps (TFiLM), que en el cas del \emph{fuzz} redueix l'error aproximadament a la meitat~\cite{comunita2023}.
+In parallel, Martínez Ramírez and Reiss proposed end-to-end models based on convolutions and dense layers for nonlinear effects~\cite{martinez2019}. They also compared several architectures on effects of different kinds, including distortion and compressors~\cite{martinez2020}. Later, temporal convolutional networks (TCN) were optimised for real time, with very small models that run on a CPU~\cite{steinmetz2022}. Comunità \emph{et al.} observed that enlarging the receptive field of these networks is not enough for effects with long memory, such as \emph{fuzz} and compressors. They solved this with time-varying feature modulation (TFiLM), which roughly halves the error in the case of \emph{fuzz}~\cite{comunita2023}.
 
-\subsection{Models recurrents}
+\subsection{Recurrent models}
 
-Les xarxes recurrents mantenen un estat intern $h[n]$ que resumeix la història del senyal, de manera que la memòria no depèn de la mida d'un camp receptiu. En la forma més habitual per a l'emulació d'àudio, el model processa una mostra cada vegada:
+Recurrent networks maintain an internal state $h[n]$ that summarises the history of the signal, so that memory does not depend on the size of a receptive field. In the most common form for audio emulation, the model processes one sample at a time:
 \begin{equation}
 h[n] = \mathrm{RNN}\big(x[n],\, h[n-1]\big), \qquad \hat{y}[n] = \mathbf{w}^{\top} h[n] + b + x[n],
 \end{equation}
-on l'últim terme és una connexió residual que fa que la xarxa només hagi d'aprendre la diferència entre l'entrada i la sortida (figura~\ref{fig:rnn}). La cel·la LSTM~\cite{hochreiter1997} controla el flux d'informació amb tres portes (d'entrada, d'oblit i de sortida) i un estat de cel·la addicional. La GRU~\cite{cho2014} en fa servir dues (d'actualització i de reinici) i és més lleugera. Amb una entrada escalar i $H$ unitats, i comptant els dos vectors de biaix que utilitza PyTorch, una capa LSTM té $4H^2+12H$ paràmetres i una GRU $3H^2+9H$. Com que el cost per mostra és aproximadament proporcional a aquest nombre, passar de 64 a 32 unitats redueix el càlcul aproximadament a una quarta part. Per exemple, dues capes LSTM de 64 unitats sumen uns 50\,000 paràmetres, mentre que una sola LSTM de 40 unitats en té uns 6\,900.
+where the last term is a residual connection, so that the network only has to learn the difference between the input and the output (Figure~\ref{fig:rnn}). The LSTM cell~\cite{hochreiter1997} controls the flow of information with three gates (input, forget and output) and an additional cell state. The GRU~\cite{cho2014} uses two (update and reset) and is lighter. With a scalar input and $H$ units, and counting the two bias vectors used by PyTorch, an LSTM layer has $4H^2+12H$ parameters and a GRU $3H^2+9H$. Since the cost per sample is roughly proportional to this number, going from 64 to 32 units reduces the computation to roughly a quarter. For example, two LSTM layers of 64 units add up to about 50\,000 parameters, while a single LSTM of 40 units has about 6\,900.
 
 \begin{figure}[!htbp]
 \centering
@@ -294,232 +257,349 @@ on l'últim terme és una connexió residual que fa que la xarxa només hagi d'a
     sum/.style={draw=black!60, circle, inner sep=1pt, minimum size=0.5cm},
     arr/.style={-{Stealth[length=1.8mm]}, black!60}]
 \node (x) {$x[n]$};
-\node[blk, right=of x] (r) {LSTM / GRU\\($H$ unitats)};
-\node[blk, right=of r] (d) {Capa lineal\\($H\rightarrow 1$)};
+\node[blk, right=of x] (r) {LSTM / GRU\\($H$ units)};
+\node[blk, right=of r] (d) {Linear layer\\($H\rightarrow 1$)};
 \node[sum, right=of d] (s) {$+$};
 \node[right=0.7cm of s] (y) {$\hat{y}[n]$};
 \draw[arr] (x) -- (r); \draw[arr] (r) -- node[above]{$h[n]$} (d); \draw[arr] (d) -- (s); \draw[arr] (s) -- (y);
 \draw[arr] (r.north) ++(0.35,0) -- ++(0,0.45) -| node[pos=0.25, above, font=\scriptsize]{$h[n-1]$} ([xshift=-0.35cm]r.north);
 \coordinate (xs) at ($(x.east)+(0.25,0)$);
-\draw[arr] (xs) -- ++(0,-0.9) -| node[pos=0.25, below, font=\scriptsize]{connexió residual} (s.south);
+\draw[arr] (xs) -- ++(0,-0.9) -| node[pos=0.25, below, font=\scriptsize]{residual connection} (s.south);
 \end{tikzpicture}
-\caption{Model recurrent amb connexió residual utilitzat habitualment per a l'emulació de distorsió~\cite{wright2019}.}
+\caption{Recurrent model with a residual connection commonly used for distortion emulation~\cite{wright2019}.}
 \label{fig:rnn}
-\end{figure} Schmitz i Embrechts van ser dels primers a utilitzar una LSTM~\cite{hochreiter1997} per emular un amplificador de vàlvules en temps real, amb un error inferior a l'1\,\% i amb el guany de l'amplificador com a paràmetre addicional~\cite{schmitz2018}.
+\end{figure}
 
-El treball de referència és el de Wright \emph{et al.}~\cite{wright2019,wright2020}. Les seves aportacions principals són:
+Schmitz and Embrechts were among the first to use an LSTM~\cite{hochreiter1997} to emulate a valve amplifier in real time, with an error below 1\,\% and with the amplifier gain as an additional parameter~\cite{schmitz2018}.
+
+The reference work is that of Wright \emph{et al.}~\cite{wright2019,wright2020}. Its main contributions are:
 \begin{itemize}[nosep]
-    \item Una arquitectura molt simple: una sola capa recurrent (LSTM o GRU~\cite{cho2014}) seguida d'una capa lineal, amb una connexió residual que suma l'entrada a la sortida.
-    \item Un procediment d'entrenament amb retropropagació truncada en el temps i un període d'escalfament inicial de l'estat ocult, en què no es calcula la pèrdua.
-    \item L'ús de la pèrdua ESR amb un filtre de pre-èmfasi (secció~\ref{s:avaluacio}).
+    \item A very simple architecture: a single recurrent layer (LSTM or GRU~\cite{cho2014}) followed by a linear layer, with a residual connection that adds the input to the output.
+    \item A training procedure with truncated backpropagation through time and an initial warm-up period for the hidden state, during which the loss is not computed.
+    \item The use of the ESR loss with a pre-emphasis filter (Section~\ref{s:avaluacio}).
 \end{itemize}
-En comparar-les amb WaveNet sobre pedals i amplificadors, les xarxes recurrents van obtenir una precisió similar amb un cost computacional menor~\cite{wright2019}. A més, en les proves d'escolta MUSHRA els millors models van obtenir puntuacions properes a les de la referència oculta~\cite{wright2020}.
+When compared with WaveNet on pedals and amplifiers, recurrent networks achieved similar accuracy at a lower computational cost~\cite{wright2019}. Moreover, in MUSHRA listening tests the best models obtained scores close to those of the hidden reference~\cite{wright2020}.
 
-Estudis posteriors han confirmat la validesa de l'enfocament. Cassidy i De Sena van avaluar models LSTM i WaveNet d'un amplificador d'alt guany (Peavey 6505) amb cinc proves d'escolta. Entrenant amb material d'un gènere musical concret, el model LSTM va resultar indistingible de l'amplificador real en proves ABX~\cite{cassidy2023}. Simionato i Fasciani van comparar sistemàticament diverses xarxes basades en estat i van concloure que l'LSTM és la millor opció per a la distorsió i l'equalització, tot i que amb diferències petites~\cite{simionato2025}.
+Later studies have confirmed the validity of the approach. Cassidy and De Sena evaluated LSTM and WaveNet models of a high-gain amplifier (Peavey 6505) with five listening tests. When trained on material from a specific musical genre, the LSTM model was indistinguishable from the real amplifier in ABX tests~\cite{cassidy2023}. Simionato and Fasciani systematically compared several state-based networks and concluded that the LSTM is the best option for distortion and equalisation, although with small differences~\cite{simionato2025}.
 
-Aquesta conclusió, però, no és unànime. En un estudi amb una gran varietat d'efectes no lineals, Comunità \emph{et al.} van trobar que els models d'espai d'estats estructurats (S4) amb condicionament variable en el temps obtenien els millors resultats, i que les LSTM eren les menys fiables~\cite{comunita2025}. La diferència entre aquests estudis es pot deure als efectes considerats (els \emph{fuzz} i compressors tenen més memòria que un \emph{overdrive}), a la mida dels models i als procediments d'entrenament. Això indica que la tria d'arquitectura depèn de l'efecte concret i justifica una comparació experimental en cada cas.
+This conclusion, however, is not unanimous. In a study with a wide variety of nonlinear effects, Comunità \emph{et al.} found that structured state-space models (S4) with time-varying conditioning gave the best results, and that LSTMs were the least reliable~\cite{comunita2025}. The difference between these studies may be due to the effects considered (\emph{fuzz} and compressors have more memory than an \emph{overdrive}), to the size of the models and to the training procedures. This indicates that the choice of architecture depends on the specific effect and justifies an experimental comparison in each case.
 
-\subsection{Models híbrids i de caixa grisa neuronal}
+\subsection{Hybrid and neural grey-box models}
 
-Una línia de recerca activa combina el coneixement del circuit amb l'aprenentatge automàtic per obtenir models més eficients, interpretables o que necessitin menys dades:
+An active line of research combines knowledge of the circuit with machine learning to obtain models that are more efficient, more interpretable or that need less data:
 \begin{itemize}[nosep]
-    \item Parker \emph{et al.} van entrenar xarxes profundes que aprenen directament les equacions d'estat no lineals d'un circuit~\cite{parker2019}. Wilczek \emph{et al.} van fer servir equacions diferencials ordinàries neuronals per modelar circuits retalladors de díodes amb menys paràmetres i amb la possibilitat de canviar la freqüència de mostreig~\cite{wilczek2022}.
-    \item Kuznetsov \emph{et al.} van mostrar com entrenar filtres IIR amb retropropagació, cosa que permet integrar estructures clàssiques orientades a blocs dins d'un model diferenciable~\cite{kuznetsov2020}.
-    \item Miklanek \emph{et al.} van combinar xarxes recurrents amb l'anàlisi nodal del circuit i van obtenir models d'amplificador que necessiten moltes menys dades d'entrenament que un model de caixa negra~\cite{miklanek2023}.
-    \item Yeh \emph{et al.} van proposar un model de processament de senyal diferenciable (DDSP) amb mòduls per al preamplificador, la xarxa de to, l'etapa de potència i el transformador. Va obtenir resultats comparables als models neuronals de caixa negra amb menys del 10\,\% de les operacions per mostra~\cite{yeh2024ddsp}.
+    \item Parker \emph{et al.} trained deep networks that directly learn the nonlinear state equations of a circuit~\cite{parker2019}. Wilczek \emph{et al.} used neural ordinary differential equations to model diode clipper circuits with fewer parameters and with the ability to change the sampling rate~\cite{wilczek2022}.
+    \item Kuznetsov \emph{et al.} showed how to train IIR filters with backpropagation, which makes it possible to integrate classic block-oriented structures into a differentiable model~\cite{kuznetsov2020}.
+    \item Miklanek \emph{et al.} combined recurrent networks with nodal analysis of the circuit and obtained amplifier models that need much less training data than a black-box model~\cite{miklanek2023}.
+    \item Yeh \emph{et al.} proposed a differentiable digital signal processing (DDSP) model with modules for the preamplifier, the tone stack, the power stage and the transformer. It achieved results comparable to black-box neural models with less than 10\,\% of the operations per sample~\cite{yeh2024ddsp}.
 \end{itemize}
-Malgrat aquests avantatges, en la comparació àmplia de Comunità \emph{et al.} els models de caixa grisa encara queden generalment per sota dels de caixa negra en precisió~\cite{comunita2025}.
+Despite these advantages, in the broad comparison by Comunità \emph{et al.} grey-box models still generally fall short of black-box models in accuracy~\cite{comunita2025}.
 
-\subsection{Condicionament pels controls de l'equip}
+\subsection{Conditioning on the device controls}
 
-Un model entrenat amb una configuració fixa (posició dels controls de guany, to, etc.) només reprodueix aquesta configuració, i per això s'anomena \emph{captura} o \emph{snapshot}. Per reproduir tot el rang de l'equip, el model es condiciona amb els valors dels controls. La manera més simple és concatenar-los a l'entrada de la xarxa~\cite{schmitz2018,wright2020}. Alternatives més expressives són la modulació lineal de característiques (FiLM)~\cite{comunita2023} i les xarxes hiperparametritzades, en què una segona xarxa genera els pesos de la xarxa recurrent. Aquestes últimes superen la concatenació en un pedal d'\emph{overdrive} i en un compressor~\cite{yeh2024hyper}. A escala industrial, Juvela \emph{et al.} (Neural DSP) van automatitzar la recollida de dades amb un robot que mou els controls de l'amplificador, i van obtenir un model LSTM condicionat que, en proves d'escolta, iguala una simulació de circuit SPICE d'alta qualitat i funciona en temps real~\cite{juvela2023}.
+A model trained with a fixed configuration (position of the gain, tone and other controls) only reproduces that configuration, which is why it is called a \emph{capture} or \emph{snapshot}. To reproduce the full range of the device, the model is conditioned on the control values. The simplest way is to concatenate them to the network input~\cite{schmitz2018,wright2020}. More expressive alternatives are feature-wise linear modulation (FiLM)~\cite{comunita2023} and hypernetworks, in which a second network generates the weights of the recurrent network. The latter outperform concatenation on an \emph{overdrive} pedal and on a compressor~\cite{yeh2024hyper}. At industrial scale, Juvela \emph{et al.} (Neural DSP) automated data collection with a robot that turns the amplifier controls, and obtained a conditioned LSTM model that, in listening tests, matches a high-quality SPICE circuit simulation and runs in real time~\cite{juvela2023}.
 
-\subsection{Resum comparatiu}
+\subsection{Comparative summary}
 
-La taula~\ref{tab:estat} resumeix els treballs més rellevants per a aquest TFM.
+Table~\ref{tab:estat} summarises the works most relevant to this thesis.
 
 \begin{table}[H]
 \centering
-\caption{Resum dels treballs més rellevants sobre emulació neuronal de distorsió i amplificadors.}
+\caption{Summary of the most relevant works on neural emulation of distortion and amplifiers.}
 \label{tab:estat}
 \scriptsize
 \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash\hsize=0.4\hsize}X>{\raggedright\arraybackslash\hsize=0.95\hsize}X>{\raggedright\arraybackslash\hsize=0.95\hsize}X>{\raggedright\arraybackslash\hsize=1.7\hsize}X}
 \toprule
-\textbf{Ref.} & \textbf{Arquitectura} & \textbf{Sistema modelat} & \textbf{Aportació principal} \\
+\textbf{Ref.} & \textbf{Architecture} & \textbf{Modelled system} & \textbf{Main contribution} \\
 \midrule
-\cite{schmitz2018} & LSTM & Amplificador de vàlvules & Error $<$1\,\% en temps real; guany com a entrada. \\
-\cite{damskagg2019} & WaveNet & Preamplificador de vàlvules & Primer model convolucional d'alta qualitat per a amplificadors. \\
-\cite{wright2019,wright2020} & LSTM, GRU, WaveNet & Pedals i amplificadors & Arquitectura recurrent mínima, pèrdua amb pre-èmfasi i proves MUSHRA; les RNN igualen WaveNet amb menys cost. \\
-\cite{wright2020percep} & LSTM & Pedals i amplificadors & Filtres de pre-èmfasi a la pèrdua i millora perceptual. \\
-\cite{steinmetz2022} & TCN & Compressor analògic & TCN molt petites i eficients en CPU. \\
-\cite{comunita2023} & TCN + TFiLM & \emph{Fuzz} i compressors & Modulació temporal per a efectes amb memòria llarga. \\
-\cite{cassidy2023} & LSTM, WaveNet & Amplificador d'alt guany & Entrenament específic per gènere; LSTM indistingible en ABX. \\
-\cite{miklanek2023} & RNN + anàlisi nodal & Amplificador & Caixa grisa neuronal amb poques dades. \\
-\cite{juvela2023} & LSTM condicionada & Amplificador (tots els controls) & Captura robotitzada; qualitat igual a SPICE en temps real. \\
-\cite{yeh2024hyper} & HyperRNN & \emph{Overdrive} i compressor & Condicionament amb hiperxarxes millor que la concatenació. \\
-\cite{yeh2024ddsp} & DDSP & Amplificador & Model interpretable amb $<$10\,\% de les operacions. \\
-\cite{simionato2025} & LSTM, GRU, S4, LRU & Diversos efectes & L'LSTM és la millor opció per a la distorsió. \\
-\cite{comunita2025} & LSTM, TCN, GCN, S4, caixa grisa & Diversos efectes no lineals & S4 amb condicionament temporal és la més precisa; LSTM la menys fiable. \\
+\cite{schmitz2018} & LSTM & Valve amplifier & Error $<$1\,\% in real time; gain as an input. \\
+\cite{damskagg2019} & WaveNet & Valve preamplifier & First high-quality convolutional model for amplifiers. \\
+\cite{wright2019,wright2020} & LSTM, GRU, WaveNet & Pedals and amplifiers & Minimal recurrent architecture, pre-emphasis loss and MUSHRA tests; RNNs match WaveNet at a lower cost. \\
+\cite{wright2020percep} & LSTM & Pedals and amplifiers & Pre-emphasis filters in the loss and perceptual improvement. \\
+\cite{steinmetz2022} & TCN & Analogue compressor & Very small, efficient TCNs on CPU. \\
+\cite{comunita2023} & TCN + TFiLM & \emph{Fuzz} and compressors & Temporal modulation for effects with long memory. \\
+\cite{cassidy2023} & LSTM, WaveNet & High-gain amplifier & Genre-specific training; LSTM indistinguishable in ABX. \\
+\cite{miklanek2023} & RNN + nodal analysis & Amplifier & Neural grey box with little data. \\
+\cite{juvela2023} & Conditioned LSTM & Amplifier (all controls) & Robotic capture; quality equal to SPICE in real time. \\
+\cite{yeh2024hyper} & HyperRNN & \emph{Overdrive} and compressor & Hypernetwork conditioning better than concatenation. \\
+\cite{yeh2024ddsp} & DDSP & Amplifier & Interpretable model with $<$10\,\% of the operations. \\
+\cite{simionato2025} & LSTM, GRU, S4, LRU & Various effects & The LSTM is the best option for distortion. \\
+\cite{comunita2025} & LSTM, TCN, GCN, S4, grey box & Various nonlinear effects & S4 with temporal conditioning is the most accurate; LSTM the least reliable. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\section{Funcions de pèrdua i avaluació}
+\section{Loss functions and evaluation}
 \label{s:avaluacio}
 
-\subsection{Funcions de pèrdua}
+\subsection{Loss functions}
 
-La funció de pèrdua més utilitzada és l'\textbf{ESR} (\emph{error-to-signal ratio}), l'energia de l'error normalitzada per l'energia del senyal objectiu (equació~\eqref{eq:esr})~\cite{wright2019}. La normalització fa que l'error sigui comparable entre trossos amb volums molt diferents. Wright \emph{et al.} hi afegeixen un terme que penalitza la diferència de component contínua (DC)~\cite{wright2020}.
+The most widely used loss function is the \textbf{ESR} (\emph{error-to-signal ratio}), the energy of the error normalised by the energy of the target signal (Equation~\eqref{eq:esr})~\cite{wright2019}. The normalisation makes the error comparable between segments with very different volumes. Wright \emph{et al.} add a term that penalises the difference in the DC component~\cite{wright2020}.
 
-L'ESR calculat directament sobre la forma d'ona dona el mateix pes a totes les freqüències, mentre que l'oïda és molt més sensible a les freqüències mitjanes i altes. Per això, Wright i Välimäki van proposar aplicar un \textbf{filtre de pre-èmfasi} a la sortida i a l'objectiu abans de calcular la pèrdua: un filtre passa-alts de primer ordre, de la forma $H(z)=1-\alpha z^{-1}$ amb $\alpha$ proper a 1, o una aproximació a la ponderació A. Les proves d'escolta van mostrar que els models entrenats així són percebuts com a més fidels~\cite{wright2020percep}.
+The ESR computed directly on the waveform gives the same weight to all frequencies, whereas the ear is much more sensitive to mid and high frequencies. For this reason, Wright and Välimäki proposed applying a \textbf{pre-emphasis filter} to the output and the target before computing the loss: a first-order high-pass filter of the form $H(z)=1-\alpha z^{-1}$ with $\alpha$ close to 1, or an approximation of A-weighting. Listening tests showed that models trained this way are perceived as more faithful~\cite{wright2020percep}.
 
-Una alternativa és comparar els senyals en el domini freqüencial. La \textbf{pèrdua espectral de múltiples resolucions} (MR-STFT) calcula la diferència entre les magnituds de transformades de Fourier de temps curt amb diverses mides de finestra, de manera que captura alhora el detall temporal i el freqüencial~\cite{yamamoto2020}. Per a cada resolució $m$, amb $S_m$ la magnitud de l'espectrograma i $N_m$ el nombre d'elements, la pèrdua combina la convergència espectral i la diferència de magnituds logarítmiques:
+An alternative is to compare the signals in the frequency domain. The \textbf{multi-resolution spectral loss} (MR-STFT) computes the difference between the magnitudes of short-time Fourier transforms with several window sizes, so that it captures temporal and frequency detail at the same time~\cite{yamamoto2020}. For each resolution $m$, with $S_m$ the spectrogram magnitude and $N_m$ the number of elements, the loss combines spectral convergence and the difference of log magnitudes:
 \begin{equation}
 \mathcal{L}_{\mathrm{MR}} = \frac{1}{M}\sum_{m=1}^{M}\left(\frac{\lVert S_m(y)-S_m(\hat{y})\rVert_F}{\lVert S_m(y)\rVert_F} + \frac{1}{N_m}\big\lVert \log S_m(y)-\log S_m(\hat{y})\big\rVert_1\right).
 \end{equation}
-Com que ignora la fase, aquesta pèrdua se sol combinar amb l'ESR, que sí que la té en compte. La biblioteca \emph{auraloss} implementa aquestes pèrdues per a PyTorch~\cite{steinmetz2020}. Finalment, Wright \emph{et al.} han explorat l'entrenament adversari, que fins i tot permet aprendre a partir de dades no parellades~\cite{wright2023}.
+Since it ignores phase, this loss is usually combined with the ESR, which does take it into account. The \emph{auraloss} library implements these losses for PyTorch~\cite{steinmetz2020}. Finally, Wright \emph{et al.} have explored adversarial training, which even makes it possible to learn from unpaired data~\cite{wright2023}.
 
-\subsection{Mètriques objectives}
+\subsection{Objective metrics}
 
-La pròpia ESR sobre un conjunt de test és la mètrica objectiva més reportada, i sovint es complementa amb l'error espectral. Altres mètriques d'origen perceptual, com PEAQ~\cite{itu2001} o la distància d'àudio de Fréchet (FAD), que compara distribucions d'incrustacions extretes amb una xarxa preentrenada~\cite{kilgour2019}, s'utilitzen amb menys freqüència en aquest àmbit. Tanmateix, l'ESR no explica tota la qualitat percebuda: dos models amb un ESR semblant poden sonar diferent, especialment pel que fa als artefactes d'alta freqüència~\cite{wright2020percep}.
+The ESR itself on a test set is the most commonly reported objective metric, and it is often complemented with the spectral error. Other perceptually motivated metrics, such as PEAQ~\cite{itu2001} or the Fréchet Audio Distance (FAD), which compares distributions of embeddings extracted with a pretrained network~\cite{kilgour2019}, are used less often in this field. However, the ESR does not explain all of the perceived quality: two models with a similar ESR can sound different, especially regarding high-frequency artefacts~\cite{wright2020percep}.
 
-\subsection{Avaluació perceptual}
+\subsection{Perceptual evaluation}
 
-L'avaluació de referència són les proves d'escolta. El mètode \textbf{MUSHRA} (ITU-R BS.1534) demana als participants que puntuïn de 0 a 100 diversos estímuls respecte a una referència coneguda, incloent-hi una referència oculta i un estímul àncora de baixa qualitat~\cite{itu2015}. És el mètode utilitzat per Wright \emph{et al.}~\cite{wright2020}. Les proves \textbf{ABX}, en què l'oient ha d'identificar quin de dos estímuls coincideix amb un tercer, permeten comprovar directament si un model és distingible de l'original~\cite{cassidy2023}. Cassidy i De Sena també van observar que els fragments amb poc guany són els més exigents per distingir models~\cite{cassidy2023}, cosa que s'ha de tenir en compte a l'hora de triar el material d'avaluació.
+The reference evaluation is listening tests. The \textbf{MUSHRA} method (ITU-R BS.1534) asks participants to rate several stimuli from 0 to 100 against a known reference, including a hidden reference and a low-quality anchor stimulus~\cite{itu2015}. It is the method used by Wright \emph{et al.}~\cite{wright2020}. \textbf{ABX} tests, in which the listener has to identify which of two stimuli matches a third, make it possible to check directly whether a model can be distinguished from the original~\cite{cassidy2023}. Cassidy and De Sena also observed that low-gain passages are the most demanding for distinguishing models~\cite{cassidy2023}, which should be taken into account when choosing the evaluation material.
 
-\section{Dades d'entrenament}
+\section{Training data}
 \label{s:dades}
 
-Els models de caixa negra necessiten parelles de senyals sincronitzades: el senyal net a l'entrada de l'equip i la sortida corresponent. Normalment s'obtenen enviant un senyal de guitarra prèviament gravat (o un senyal de test) a l'equip, mitjançant una tècnica coneguda com a \emph{reamping}, i gravant-ne la sortida. Els aspectes crítics que identifica la literatura són:
+Black-box models need synchronised signal pairs: the clean signal at the device input and the corresponding output. These are usually obtained by sending a previously recorded guitar signal (or a test signal) through the device, a technique known as \emph{reamping}, and recording its output. The critical aspects identified in the literature are:
 \begin{itemize}[nosep]
-    \item \textbf{Representativitat.} El material ha de cobrir el rang de nivells, freqüències i tècniques que es faran servir. L'entrenament específic per a un gènere millora els resultats en aquest gènere~\cite{cassidy2023}.
-    \item \textbf{Quantitat.} Els models de caixa negra solen entrenar-se amb uns quants minuts d'àudio per configuració. Els models de caixa grisa neuronal redueixen aquesta necessitat~\cite{miklanek2023}.
-    \item \textbf{Alineació i nivells.} La latència de la interfície i dels processadors s'ha de compensar, i els nivells s'han de calibrar perquè la distorsió depèn de l'amplitud d'entrada.
-    \item \textbf{Freqüència de mostreig.} Un model entrenat a una freqüència de mostreig no funciona correctament a una altra si no es fan adaptacions específiques~\cite{carson2024}.
+    \item \textbf{Representativeness.} The material must cover the range of levels, frequencies and techniques that will be used. Genre-specific training improves results in that genre~\cite{cassidy2023}.
+    \item \textbf{Quantity.} Black-box models are usually trained with a few minutes of audio per configuration. Neural grey-box models reduce this requirement~\cite{miklanek2023}.
+    \item \textbf{Alignment and levels.} The latency of the interface and the processors must be compensated, and levels must be calibrated because distortion depends on the input amplitude.
+    \item \textbf{Sampling rate.} A model trained at one sampling rate does not work correctly at another without specific adaptations~\cite{carson2024}.
 \end{itemize}
 
-Per facilitar la captura, les eines obertes i comercials proporcionen \textbf{senyals d'entrenament estandarditzats}, que combinen escombrats, soroll i fragments de guitarra. És el cas de Neural Amp Modeler~\cite{nam} i del connector Proteus de GuitarML~\cite{proteus}, que requereix un fitxer mono a 44{,}1\,kHz. Pel que fa als conjunts de dades públics, EGFxSet conté 8\,970 notes de guitarra processades amb dotze efectes reals, incloent-hi distorsions~\cite{pedroza2022}, i ToneTwist AFx recull efectes no lineals per a la comparació de models~\cite{comunita2025}. Una tendència recent és la generació de dades sintètiques: Open-Amp utilitza centenars d'emulacions neuronals d'amplificadors creades per la comunitat per generar dades d'entrenament a gran escala i amb augmentació~\cite{wright2025openamp}.
+To simplify capture, open and commercial tools provide \textbf{standardised training signals} that combine sweeps, noise and guitar passages. This is the case of Neural Amp Modeler~\cite{nam} and of the GuitarML Proteus plugin~\cite{proteus}, which requires a mono file at 44.1\,kHz. As for public datasets, EGFxSet contains 8\,970 guitar notes processed with twelve real effects, including distortion~\cite{pedroza2022}, and ToneTwist AFx collects nonlinear effects for model comparison~\cite{comunita2025}. A recent trend is synthetic data generation: Open-Amp uses hundreds of community-created neural amplifier emulations to generate large-scale, augmented training data~\cite{wright2025openamp}.
 
-\section{Execució en temps real}
+\section{Real-time execution}
 \label{s:tempsreal}
 
-Per fer servir un model en directe, cada bloc d'àudio (típicament de 32 a 256 mostres) s'ha de processar abans que arribi el següent. Amb un bloc de $N$ mostres i una freqüència de mostreig $f_s$, el temps disponible és $T=N/f_s$: per exemple, 2{,}9\,ms per a $N=128$ a 44{,}1\,kHz. La latència total d'entrada a sortida és com a mínim de dos blocs (un d'entrada i un de sortida) més la dels convertidors de la interfície, de manera que amb $N=128$ supera els 5,8\,ms. Per això és habitual caracteritzar un model amb el \emph{factor de temps real}, el quocient entre el temps de càlcul i la durada de l'àudio processat, que ha de ser clarament inferior a 1 per deixar marge a la resta del sistema. Això imposa tres requisits: un temps de càlcul per mostra baix i estable, l'absència d'assignacions de memòria i de bloquejos al fil d'àudio, i una latència algorísmica nul·la o mínima~\cite{chowdhury2021}. Els models recurrents i les convolucions causals compleixen el tercer requisit perquè no necessiten mostres futures.
+To use a model live, each audio block (typically 32 to 256 samples) must be processed before the next one arrives. With a block of $N$ samples and a sampling rate $f_s$, the available time is $T=N/f_s$: for example, 2.9\,ms for $N=128$ at 44.1\,kHz. The total input-to-output latency is at least two blocks (one input and one output) plus that of the interface converters, so with $N=128$ it exceeds 5.8\,ms. It is therefore common to characterise a model by its \emph{real-time factor}, the ratio between the computation time and the duration of the processed audio, which must be clearly below 1 to leave headroom for the rest of the system. This imposes three requirements: a low and stable computation time per sample, no memory allocation or locking in the audio thread, and zero or minimal algorithmic latency~\cite{chowdhury2021}. Recurrent models and causal convolutions meet the third requirement because they do not need future samples.
 
-Les xarxes recurrents s'avaluen mostra a mostra, cosa que limita el paral·lelisme però les fa molt eficients per a mides petites. Les xarxes convolucionals poden aprofitar el processament per blocs i les instruccions vectorials~\cite{wright2019,steinmetz2022}. La biblioteca RTNeural implementa capes LSTM, GRU, convolucionals i denses amb mides definides en temps de compilació, sense assignacions dinàmiques i amb diversos motors de càlcul vectorial (Eigen, xsimd)~\cite{chowdhury2021}. És el motor que fa servir, per exemple, el connector Proteus~\cite{proteus}.
+Recurrent networks are evaluated sample by sample, which limits parallelism but makes them very efficient at small sizes. Convolutional networks can take advantage of block processing and vector instructions~\cite{wright2019,steinmetz2022}. The RTNeural library implements LSTM, GRU, convolutional and dense layers with sizes defined at compile time, without dynamic allocation and with several vector computation backends (Eigen, xsimd)~\cite{chowdhury2021}. It is the engine used, for example, by the Proteus plugin~\cite{proteus}.
 
-Un problema específic és l'aliàsing. Les no linealitats apreses també generen harmònics per sobre de la freqüència de Nyquist. Carson \emph{et al.} han proposat mètodes per executar xarxes recurrents a freqüències de mostreig diferents de la d'entrenament, cosa que permet el sobremostreig~\cite{carson2024}, i filtres de remostreig específics que redueixen l'aliàsing en models neuronals de distorsió~\cite{carson2025}.
+A specific problem is aliasing. Learned nonlinearities also generate harmonics above the Nyquist frequency. Carson \emph{et al.} have proposed methods for running recurrent networks at sampling rates different from the training one, which enables oversampling~\cite{carson2024}, and specific resampling filters that reduce aliasing in neural distortion models~\cite{carson2025}.
 
-\section{Solucions existents}
+\section{Existing solutions}
 \label{s:mercat}
 
-L'emulació basada en captures d'equips reals està plenament establerta al mercat, i diversos fabricants i projectes oberts fan servir xarxes neuronals. Alguns exemples representatius són:
+Emulation based on captures of real equipment is well established on the market, and several manufacturers and open projects use neural networks. Some representative examples are:
 \begin{itemize}[nosep]
-    \item \textbf{Neural DSP Quad Cortex (Neural Capture)}. Aprèn el comportament d'amplificadors, pedals i caixes. Ofereix una versió que s'executa al mateix dispositiu i una altra al núvol, amb més resolució per a equips molt dinàmics com els \emph{fuzz} i els compressors~\cite{quadcortex}.
-    \item \textbf{Neural Amp Modeler (NAM)}. Programari obert per entrenar i executar captures d'amplificadors i pedals, basat principalment en xarxes convolucionals~\cite{nam}.
-    \item \textbf{GuitarML Proteus}. Connector obert (GPL-3.0) basat en una LSTM de 40 unitats executada amb RTNeural, que permet capturar també la posició d'un control~\cite{proteus}.
+    \item \textbf{Neural DSP Quad Cortex (Neural Capture)}. It learns the behaviour of amplifiers, pedals and cabinets. It offers a version that runs on the device itself and a cloud version with higher resolution for very dynamic equipment such as \emph{fuzz} pedals and compressors~\cite{quadcortex}.
+    \item \textbf{Neural Amp Modeler (NAM)}. Open-source software for training and running captures of amplifiers and pedals, based mainly on convolutional networks~\cite{nam}.
+    \item \textbf{GuitarML Proteus}. Open-source plugin (GPL-3.0) based on a 40-unit LSTM run with RTNeural, which can also capture the position of one control~\cite{proteus}.
 \end{itemize}
-La taula~\ref{tab:solucions} en resumeix les diferències principals.
+Table~\ref{tab:solucions} summarises their main differences.
 
 \begin{table}[H]
 \centering
-\caption{Comparació de solucions existents de captura neuronal.}
+\caption{Comparison of existing neural capture solutions.}
 \label{tab:solucions}
 \small
 \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
 \toprule
 & \textbf{Quad Cortex} & \textbf{NAM} & \textbf{Proteus} \\
 \midrule
-Tipus & Maquinari comercial & Programari obert & Connector obert (GPL-3.0) \\
-Model & No publicat & Principalment convolucional & LSTM de 40 unitats \\
-Entrenament & Al dispositiu o al núvol & Ordinador de l'usuari & Quadern en línia (Colab) \\
-Controls & Captura fixa & Captura fixa & Fixa o un control \\
-Execució & Dispositiu dedicat & Connector d'àudio & Connector amb RTNeural \\
+Type & Commercial hardware & Open-source software & Open-source plugin (GPL-3.0) \\
+Model & Not published & Mainly convolutional & 40-unit LSTM \\
+Training & On the device or in the cloud & User's computer & Online notebook (Colab) \\
+Controls & Fixed capture & Fixed capture & Fixed or one control \\
+Execution & Dedicated device & Audio plugin & Plugin with RTNeural \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Els productes comercials no publiquen els detalls dels seus models. En canvi, NAM i Proteus són oberts i serveixen com a referència directa per a aquest treball. La mida de l'LSTM de Proteus, per exemple, és un indicador pràctic de la mida que es considera suficient per a ús real.
+Commercial products do not publish the details of their models. In contrast, NAM and Proteus are open and serve as a direct reference for this work. The size of the Proteus LSTM, for example, is a practical indicator of the size considered sufficient for real use.
 
-\section{Síntesi i posicionament del treball}
+\section{Synthesis and positioning of this work}
 \label{s:sintesi}
 
-La revisió permet extreure les conclusions següents:
+The review leads to the following conclusions:
 \begin{enumerate}[nosep]
-    \item El modelatge neuronal de caixa negra és el mètode dominant per a la captura d'equips de distorsió i ha arribat a una qualitat que en proves d'escolta és difícil de distingir de l'original~\cite{wright2020,cassidy2023,juvela2023}.
-    \item Per a la distorsió, les xarxes recurrents petites (LSTM, GRU) ofereixen un bon compromís entre precisió i cost~\cite{wright2019,simionato2025}. Tot i així, hi ha resultats contradictoris quan s'inclouen efectes amb més memòria, en què els models S4 i les TCN modulades són superiors~\cite{comunita2023,comunita2025}.
-    \item La funció de pèrdua influeix en la qualitat percebuda, i el pre-èmfasi és una pràctica ben establerta~\cite{wright2020percep}. En canvi, la correspondència entre les mètriques objectives i la percepció continua sent un problema obert~\cite{wright2020percep,cassidy2023}.
-    \item L'aliàsing i la dependència de la freqüència de mostreig són limitacions identificades recentment, amb solucions encara en desenvolupament~\cite{carson2024,carson2025}.
+    \item Black-box neural modelling is the dominant method for capturing distortion equipment and has reached a quality that is hard to tell apart from the original in listening tests~\cite{wright2020,cassidy2023,juvela2023}.
+    \item For distortion, small recurrent networks (LSTM, GRU) offer a good trade-off between accuracy and cost~\cite{wright2019,simionato2025}. Even so, there are contradictory results when effects with more memory are included, where S4 models and modulated TCNs are superior~\cite{comunita2023,comunita2025}.
+    \item The loss function influences perceived quality, and pre-emphasis is a well-established practice~\cite{wright2020percep}. On the other hand, the correspondence between objective metrics and perception remains an open problem~\cite{wright2020percep,cassidy2023}.
+    \item Aliasing and dependence on the sampling rate are recently identified limitations, with solutions still under development~\cite{carson2024,carson2025}.
 \end{enumerate}
 
-A partir d'aquí s'identifiquen alguns \textbf{buits} en què aquest TFM pot aportar evidència:
+From this, some \textbf{gaps} are identified where this thesis can provide evidence:
 \begin{itemize}[nosep]
-    \item \textbf{Escenari d'usuari amb pocs recursos.} La majoria d'estudis treballen amb equips de laboratori, conjunts de dades curats o, en l'àmbit industrial, amb captures robotitzades. Hi ha poca evidència sistemàtica sobre quina quantitat i tipus de material gravat per un músic a casa és necessari, i quina mida mínima de model és suficient en aquest cas.
-    \item \textbf{Comparació controlada per a la distorsió.} Les conclusions sobre quina arquitectura és millor difereixen entre estudis. Una comparació amb les mateixes dades, el mateix procediment d'entrenament i el mateix pressupost computacional, centrada en un efecte de distorsió concret, aporta evidència útil.
+    \item \textbf{Low-resource user scenario.} Most studies work with laboratory equipment, curated datasets or, in industry, robotic captures. There is little systematic evidence on how much and what kind of material recorded by a musician at home is needed, and what minimum model size is sufficient in that case.
+    \item \textbf{Controlled comparison for distortion.} Conclusions about which architecture is best differ between studies. A comparison with the same data, the same training procedure and the same computational budget, focused on a specific distortion effect, provides useful evidence.
 \end{itemize}
 
-Aquest TFM se situa, doncs, en el modelatge de caixa negra amb xarxes neuronals (figura~\ref{fig:taxonomia}). Pren com a base metodològica els treballs de Wright \emph{et al.}~\cite{wright2019,wright2020,wright2020percep} i n'estén l'anàlisi en la direcció dels buits descrits. Aquestes conclusions justifiquen els objectius plantejats al capítol~1.
+This thesis is therefore positioned within black-box modelling with neural networks (Figure~\ref{fig:taxonomia}). It takes the work of Wright \emph{et al.}~\cite{wright2019,wright2020,wright2020percep} as its methodological basis and extends the analysis in the direction of the gaps described. These conclusions justify the objectives set out in Chapter~1.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Capítols pendents (s'ompliran a les properes PEC)
+% Remaining chapters (to be completed in the next PECs)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Materials i mètodes}
+\chapter{Materials and methods}
+\label{c:metodes}
 
-\chapter{Resultats}
+This chapter describes the dataset, the model and the training and evaluation process used in the experiments. All the code was written in Python with PyTorch~\cite{paszke2019}.
 
-\chapter{Conclusions i treballs futurs}
+\section{Dataset}
 
-\chapter{Glossari}
+\subsection{Capture}
+
+A single electric guitar track was recorded as a direct signal (DI) of 341.3\,s (5\,min 41\,s), at 44.1\,kHz and 24\,bits, with the REAPER digital audio workstation. The track contains an improvisation in which the guitar was played with as many techniques and variations as possible.
+
+From this same track, four outputs were generated by processing it with four different configurations of the Archetype: Plini X amplifier simulator by Neural DSP (digital \emph{reamping}). Each configuration corresponds to a sound with a different amount of distortion:
+\begin{itemize}[nosep]
+    \item \textbf{acoustic}: clean sound, with very little distortion;
+    \item \textbf{crunch}: moderate distortion;
+    \item \textbf{dirty\_coil}: moderate distortion, with a different timbral character;
+    \item \textbf{high\_gain}: heavy distortion.
+\end{itemize}
+To avoid effects that a small recurrent network cannot learn (Section~\ref{s:dades}), reverb, delay, modulation effects, stereo effects and the noise gate were disabled. All the outputs therefore share the same input and differ only in the nonlinear processing of the amplifier.
+
+\subsection{Preprocessing}
+
+The files were exported in stereo with the pan shifted to the left, so the left channel is a copy of the right one amplified about 2.4 times and, in some cases, clipped. For this reason only the \textbf{right channel} is used, which is a clean, unclipped copy of the same signal.
+
+Each output was aligned with the input by estimating the processing delay through cross-correlation. The simulator introduces a delay of about 40 samples (close to 1\,ms) in the distorted sounds and of 12 in the clean sound. This delay is not fully compensated: a margin of 25 samples is left uncompensated so that the model, which is causal, does not have to predict future samples (Table~\ref{tab:retards}). Finally, each signal is normalised by dividing it by its peak value.
+
+\begin{table}[H]
+\centering
+\caption{Measured and compensated delay for each sound (in samples at 44.1\,kHz).}
+\label{tab:retards}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Sound} & \textbf{Measured delay} & \textbf{Compensated delay} \\
+\midrule
+crunch & 40 & 15 \\
+dirty\_coil & 39 & 14 \\
+acoustic & 12 & 0 \\
+high\_gain & 38 & 13 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Split}
+
+The audio is split in time into three consecutive segments, identical for the four sounds: 70\,\% for training (239\,s), 15\,\% for validation (51\,s) and the final 15\,\% for testing (51\,s). The test set is never used during training.
+
+\section{Model}
+
+An LSTM recurrent network~\cite{hochreiter1997} with two layers of 64 units followed by a linear layer is used, processing the audio sample by sample. To reproduce the four sounds with a single model, the network is \textbf{conditioned}: at each step it receives the guitar sample and a four-component \emph{one-hot} vector indicating which sound it has to generate, similarly to the conditioning on the device controls described in Section~\ref{s:neural}~\cite{wright2020,juvela2023}. The input therefore has five components per step, and the model has about 51\,500 parameters.
+
+\section{Training}
+
+The training audio of the four sounds is cut into consecutive segments of 1024 samples (about 23\,ms), giving 41\,157 segments that are shuffled into batches of 32. Following Wright \emph{et al.}~\cite{wright2019}, the first 256 samples of each segment are excluded from the loss, because the network starts each segment with its internal state set to zero (warm-up). The loss is the ESR (Equation~\eqref{eq:esr}) computed after a first-order pre-emphasis filter $H(z)=1-0.85\,z^{-1}$~\cite{wright2020percep}.
+
+The optimiser is Adam, with a learning rate of 0.001 and the gradient norm clipped to 1. Training runs for a maximum of 200 epochs, with early stopping if the mean validation ESR does not improve for 20 epochs, and the model with the lowest mean validation ESR is kept.
+
+\section{Evaluation}
+
+To evaluate the model, the test set of each sound is processed continuously, keeping the LSTM state between blocks, as in real-time execution. The following are computed:
+\begin{itemize}[nosep]
+    \item the \textbf{ESR}, unfiltered and with pre-emphasis;
+    \item the ESR over 5\,s segments, to detect the hardest passages;
+    \item the energy difference per frequency band between the model output and the real output.
+\end{itemize}
+The model outputs and the real outputs are also saved as audio files so that they can be compared by listening.
+
+\chapter{Results}
+\label{c:resultats}
+
+\section{Preliminary experiments with a single sound}
+
+Before the experiment with several sounds, the training process was tuned with a 3-minute recording of a single distorted sound, using the same model. Table~\ref{tab:evolucio} shows how the test ESR evolved with each change. The two changes with the greatest effect were the warm-up and the margin in the delay compensation: without this margin, the model had to predict part of the future and lost a large part of the mid and high harmonics.
+
+\begin{table}[H]
+\centering
+\caption{Evolution of the test ESR with a single distorted sound.}
+\label{tab:evolucio}
+\small
+\begin{tabularx}{\textwidth}{lXc}
+\toprule
+\textbf{Version} & \textbf{Change} & \textbf{Test ESR} \\
+\midrule
+1 & Training/validation/test split and full alignment (20 epochs) & 0.358 \\
+2 & 200 epochs & 0.293 \\
+3 & 25-sample delay margin and 256-sample warm-up & 0.155 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Conditioned model for four sounds}
+
+Table~\ref{tab:multi} shows the test error of the conditioned model for each sound.
+
+\begin{table}[H]
+\centering
+\caption{Test error of the conditioned model for each sound.}
+\label{tab:multi}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Sound} & \textbf{ESR} & \textbf{Pre-emphasis ESR} & \textbf{Worst 5\,s segment} \\
+\midrule
+acoustic & 0.028 & 0.149 & 0.09 \\
+high\_gain & 0.094 & 0.164 & 0.18 \\
+crunch & 0.118 & 0.205 & 0.18 \\
+dirty\_coil & 0.179 & 0.272 & 0.29 \\
+\midrule
+\textbf{Mean} & \textbf{0.105} & \textbf{0.198} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The clean sound (\emph{acoustic}) is, as expected, the one the model reproduces best. Among the distorted sounds, the heavily distorted one (\emph{high\_gain}) obtains a lower error than the moderately distorted ones. A plausible explanation is that heavy distortion strongly compresses the signal and makes it more regular, whereas moderate distortion depends more on the dynamics of the performance. Even so, the three distorted sounds still have a clearly higher error than the clean sound.
+
+By frequency band, between 40\,Hz and 8\,kHz the model output stays within 3\,dB of the real output for all four sounds. Above 8\,kHz, however, the three distorted sounds show an excess of energy of between 14 and 24\,dB, and of about 44\,dB above 16\,kHz. This excess corresponds to high-frequency noise that the original signal does not have. In absolute energy it is small and the ESR barely penalises it, but it is audible. It could be related to the aliasing generated by the learned nonlinearities~\cite{carson2025}.
+
+The mean ESR of the conditioned model (0.105) is lower than the best result obtained with a single sound (0.155). It should be noted, however, that the two experiments do not use the same reference sound or the same amount of data: in the conditioned experiment each sound has about 4\,minutes of training data, twice as much as in the preliminary experiment.
+
+\chapter{Conclusions and future work}
+
+\chapter{Glossary}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Bibliografia}
+\chapter{Bibliography}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Estil Vancouver: llista numerada per ordre d'aparició.
+% Vancouver style: numbered list in order of appearance.
 \begingroup
-\renewcommand{\chapter}[2]{}% evita que thebibliography creï un segon títol
+\renewcommand{\chapter}[2]{}% prevents thebibliography from creating a second title
 \begin{thebibliography}{99}
 
 \bibitem{pakarinen2009} Pakarinen J, Yeh DT. A review of digital techniques for modeling vacuum-tube guitar amplifiers. \emph{Computer Music Journal}. 2009;33(2):85--100.
 
 \bibitem{vanhatalo2022} Vanhatalo T, Legrand P, Desainte-Catherine M, Hanna P, Brusco A, Pille G, et al. A review of neural network-based emulation of guitar amplifiers. \emph{Applied Sciences}. 2022;12(12):5894.
 
-\bibitem{wright2019} Wright A, Damskägg EP, Välimäki V. Real-time black-box modelling with recurrent neural networks. A: \emph{Proceedings of the 22nd International Conference on Digital Audio Effects (DAFx-19)}. Birmingham; 2019.
+\bibitem{wright2019} Wright A, Damskägg EP, Välimäki V. Real-time black-box modelling with recurrent neural networks. In: \emph{Proceedings of the 22nd International Conference on Digital Audio Effects (DAFx-19)}. Birmingham; 2019.
 
 \bibitem{wright2020} Wright A, Damskägg EP, Juvela L, Välimäki V. Real-time guitar amplifier emulation with deep learning. \emph{Applied Sciences}. 2020;10(3):766.
 
-\bibitem{nam} Atkinson S. Neural Amp Modeler [programari]. GitHub; 2023 [consultat 26 oct. 2026]. Disponible a: \url{https://github.com/sdatkinson/neural-amp-modeler}
+\bibitem{nam} Atkinson S. Neural Amp Modeler [software]. GitHub; 2023 [cited 26 Oct 2026]. Available from: \url{https://github.com/sdatkinson/neural-amp-modeler}
 
-\bibitem{paszke2019} Paszke A, Gross S, Massa F, Lerer A, Bradbury J, Chanan G, et al. PyTorch: an imperative style, high-performance deep learning library. A: \emph{Advances in Neural Information Processing Systems 32 (NeurIPS)}. 2019. p.~8024--8035.
+\bibitem{paszke2019} Paszke A, Gross S, Massa F, Lerer A, Bradbury J, Chanan G, et al. PyTorch: an imperative style, high-performance deep learning library. In: \emph{Advances in Neural Information Processing Systems 32 (NeurIPS)}. 2019. p.~8024--8035.
 
-\bibitem{onu2015} Nacions Unides. Transformar el nostre món: l'Agenda 2030 per al Desenvolupament Sostenible. Resolució A/RES/70/1. Nova York: Assemblea General de les Nacions Unides; 2015.
+\bibitem{onu2015} United Nations. Transforming our world: the 2030 Agenda for Sustainable Development. Resolution A/RES/70/1. New York: UN General Assembly; 2015.
 
-\bibitem{strubell2019} Strubell E, Ganesh A, McCallum A. Energy and policy considerations for deep learning in NLP. A: \emph{Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics (ACL)}. Florència; 2019. p.~3645--3650.
+\bibitem{strubell2019} Strubell E, Ganesh A, McCallum A. Energy and policy considerations for deep learning in NLP. In: \emph{Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics (ACL)}. Florence; 2019. p.~3645--3650.
 
-\bibitem{rgpd2016} Reglament (UE) 2016/679 del Parlament Europeu i del Consell, de 27 d'abril de 2016, relatiu a la protecció de les persones físiques pel que fa al tractament de dades personals i a la lliure circulació d'aquestes dades (Reglament general de protecció de dades). \emph{Diari Oficial de la Unió Europea}. 2016;L119:1--88.
+\bibitem{rgpd2016} Regulation (EU) 2016/679 of the European Parliament and of the Council of 27 April 2016 on the protection of natural persons with regard to the processing of personal data and on the free movement of such data (General Data Protection Regulation). \emph{Official Journal of the European Union}. 2016;L119:1--88.
 
-\bibitem{oates2006} Oates BJ. \emph{Researching Information Systems and Computing}. Londres: SAGE Publications; 2006.
+\bibitem{oates2006} Oates BJ. \emph{Researching Information Systems and Computing}. London: SAGE Publications; 2006.
 
-\bibitem{yeh2009} Yeh DT. Digital implementation of musical distortion circuits by analysis and simulation [tesi doctoral]. Stanford (CA): Stanford University; 2009.
+\bibitem{yeh2009} Yeh DT. Digital implementation of musical distortion circuits by analysis and simulation [dissertation]. Stanford (CA): Stanford University; 2009.
 
 \bibitem{yeh2010} Yeh DT, Abel JS, Vladimirescu A, Smith JO. Automated physical modeling of nonlinear audio circuits for real-time audio effects---Part I: theoretical development. \emph{IEEE Transactions on Audio, Speech, and Language Processing}. 2010;18(4):728--737.
 
-\bibitem{werner2015} Werner KJ, Smith JO, Abel JS. Wave digital filter adaptors for arbitrary topologies and multiport linear elements. A: \emph{Proceedings of the 18th International Conference on Digital Audio Effects (DAFx-15)}. Trondheim; 2015.
+\bibitem{werner2015} Werner KJ, Smith JO, Abel JS. Wave digital filter adaptors for arbitrary topologies and multiport linear elements. In: \emph{Proceedings of the 18th International Conference on Digital Audio Effects (DAFx-15)}. Trondheim; 2015.
 
-\bibitem{eichas2017} Eichas F, Möller S, Zölzer U. Block-oriented gray box modeling of guitar amplifiers. A: \emph{Proceedings of the 20th International Conference on Digital Audio Effects (DAFx-17)}. Edimburg; 2017.
+\bibitem{eichas2017} Eichas F, Möller S, Zölzer U. Block-oriented gray box modeling of guitar amplifiers. In: \emph{Proceedings of the 20th International Conference on Digital Audio Effects (DAFx-17)}. Edinburgh; 2017.
 
 \bibitem{novak2010} Novak A, Simon L, Kadlec F, Lotton P. Nonlinear system identification using exponential swept-sine signal. \emph{IEEE Transactions on Instrumentation and Measurement}. 2010;59(8):2220--2229.
 
-\bibitem{parker2019} Parker JD, Esqueda F, Bergner A. Modelling of nonlinear state-space systems using a deep neural network. A: \emph{Proceedings of the 22nd International Conference on Digital Audio Effects (DAFx-19)}. Birmingham; 2019.
+\bibitem{parker2019} Parker JD, Esqueda F, Bergner A. Modelling of nonlinear state-space systems using a deep neural network. In: \emph{Proceedings of the 22nd International Conference on Digital Audio Effects (DAFx-19)}. Birmingham; 2019.
 
-\bibitem{miklanek2023} Miklanek S, Wright A, Välimäki V, Schimmel J. Neural grey-box guitar amplifier modelling with limited data. A: \emph{Proceedings of the 26th International Conference on Digital Audio Effects (DAFx23)}. Copenhaguen; 2023.
+\bibitem{miklanek2023} Miklanek S, Wright A, Välimäki V, Schimmel J. Neural grey-box guitar amplifier modelling with limited data. In: \emph{Proceedings of the 26th International Conference on Digital Audio Effects (DAFx23)}. Copenhagen; 2023.
 
 \bibitem{yeh2024ddsp} Yeh YT, Chen YH, Cheng YC, Wu JT, Fu JJ, Yeh YF, et al. DDSP guitar amp: interpretable guitar amplifier modeling. arXiv:2408.11405 [preprint]. 2024.
 
-\bibitem{damskagg2019} Damskägg EP, Juvela L, Thuillier E, Välimäki V. Deep learning for tube amplifier emulation. A: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Brighton; 2019. p.~471--475.
+\bibitem{damskagg2019} Damskägg EP, Juvela L, Thuillier E, Välimäki V. Deep learning for tube amplifier emulation. In: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Brighton; 2019. p.~471--475.
 
-\bibitem{steinmetz2022} Steinmetz CJ, Reiss JD. Efficient neural networks for real-time modeling of analog dynamic range compression. A: \emph{152nd Convention of the Audio Engineering Society}. 2022.
+\bibitem{steinmetz2022} Steinmetz CJ, Reiss JD. Efficient neural networks for real-time modeling of analog dynamic range compression. In: \emph{152nd Convention of the Audio Engineering Society}. 2022.
 
 \bibitem{comunita2025} Comunità M, Steinmetz CJ, Reiss JD. Differentiable black-box and gray-box modeling of nonlinear audio effects. \emph{Frontiers in Signal Processing}. 2025;5:1580395. doi:10.3389/frsip.2025.1580395.
 
@@ -527,61 +607,61 @@ Aquest TFM se situa, doncs, en el modelatge de caixa negra amb xarxes neuronals 
 
 \bibitem{vandenoord2016} van den Oord A, Dieleman S, Zen H, Simonyan K, Vinyals O, Graves A, et al. WaveNet: a generative model for raw audio. arXiv:1609.03499 [preprint]. 2016.
 
-\bibitem{damskagg2019smc} Damskägg EP, Juvela L, Välimäki V. Real-time modeling of audio distortion circuits with deep learning. A: \emph{Proceedings of the 16th Sound and Music Computing Conference (SMC-19)}. Màlaga; 2019.
+\bibitem{damskagg2019smc} Damskägg EP, Juvela L, Välimäki V. Real-time modeling of audio distortion circuits with deep learning. In: \emph{Proceedings of the 16th Sound and Music Computing Conference (SMC-19)}. Málaga; 2019.
 
-\bibitem{martinez2019} Martínez Ramírez MA, Reiss JD. Modeling nonlinear audio effects with end-to-end deep neural networks. A: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Brighton; 2019. p.~171--175.
+\bibitem{martinez2019} Martínez Ramírez MA, Reiss JD. Modeling nonlinear audio effects with end-to-end deep neural networks. In: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Brighton; 2019. p.~171--175.
 
 \bibitem{martinez2020} Martínez Ramírez MA, Benetos E, Reiss JD. Deep learning for black-box modeling of audio effects. \emph{Applied Sciences}. 2020;10(2):638.
 
-\bibitem{comunita2023} Comunità M, Steinmetz CJ, Phan H, Reiss JD. Modelling black-box audio effects with time-varying feature modulation. A: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Rodes; 2023.
+\bibitem{comunita2023} Comunità M, Steinmetz CJ, Phan H, Reiss JD. Modelling black-box audio effects with time-varying feature modulation. In: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Rhodes; 2023.
 
 \bibitem{hochreiter1997} Hochreiter S, Schmidhuber J. Long short-term memory. \emph{Neural Computation}. 1997;9(8):1735--1780.
 
-\bibitem{cho2014} Cho K, van Merriënboer B, Gulcehre C, Bahdanau D, Bougares F, Schwenk H, et al. Learning phrase representations using RNN encoder--decoder for statistical machine translation. A: \emph{Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP)}. Doha; 2014. p.~1724--1734.
+\bibitem{cho2014} Cho K, van Merriënboer B, Gulcehre C, Bahdanau D, Bougares F, Schwenk H, et al. Learning phrase representations using RNN encoder--decoder for statistical machine translation. In: \emph{Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP)}. Doha; 2014. p.~1724--1734.
 
-\bibitem{cassidy2023} Cassidy W, De Sena E. Perceptual evaluation and genre-specific training of deep neural network models of a high-gain guitar amplifier. A: \emph{Proceedings of the 26th International Conference on Digital Audio Effects (DAFx23)}. Copenhaguen; 2023.
+\bibitem{cassidy2023} Cassidy W, De Sena E. Perceptual evaluation and genre-specific training of deep neural network models of a high-gain guitar amplifier. In: \emph{Proceedings of the 26th International Conference on Digital Audio Effects (DAFx23)}. Copenhagen; 2023.
 
 \bibitem{simionato2025} Simionato R, Fasciani S. Comparative study of state-based neural networks for virtual analog audio effects modeling. \emph{EURASIP Journal on Audio, Speech, and Music Processing}. 2025;2025. doi:10.1186/s13636-025-00416-3.
 
-\bibitem{wilczek2022} Wilczek J, Wright A, Välimäki V, Habets EAP. Virtual analog modeling of distortion circuits using neural ordinary differential equations. A: \emph{Proceedings of the 25th International Conference on Digital Audio Effects (DAFx20in22)}. Viena; 2022.
+\bibitem{wilczek2022} Wilczek J, Wright A, Välimäki V, Habets EAP. Virtual analog modeling of distortion circuits using neural ordinary differential equations. In: \emph{Proceedings of the 25th International Conference on Digital Audio Effects (DAFx20in22)}. Vienna; 2022.
 
-\bibitem{kuznetsov2020} Kuznetsov B, Parker JD, Esqueda F. Differentiable IIR filters for machine learning applications. A: \emph{Proceedings of the 23rd International Conference on Digital Audio Effects (DAFx2020)}. Viena; 2020.
+\bibitem{kuznetsov2020} Kuznetsov B, Parker JD, Esqueda F. Differentiable IIR filters for machine learning applications. In: \emph{Proceedings of the 23rd International Conference on Digital Audio Effects (DAFx2020)}. Vienna; 2020.
 
-\bibitem{yeh2024hyper} Yeh YT, Hsiao WY, Yang YH. Hyper recurrent neural network: condition mechanisms for black-box audio effect modeling. A: \emph{Proceedings of the 27th International Conference on Digital Audio Effects (DAFx24)}. Guildford; 2024.
+\bibitem{yeh2024hyper} Yeh YT, Hsiao WY, Yang YH. Hyper recurrent neural network: condition mechanisms for black-box audio effect modeling. In: \emph{Proceedings of the 27th International Conference on Digital Audio Effects (DAFx24)}. Guildford; 2024.
 
-\bibitem{juvela2023} Juvela L, Damskägg EP, Peussa A, Mäkinen J, Sherson T, Mimilakis SI, et al. End-to-end amp modeling: from data to controllable guitar amplifier models. A: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Rodes; 2023.
+\bibitem{juvela2023} Juvela L, Damskägg EP, Peussa A, Mäkinen J, Sherson T, Mimilakis SI, et al. End-to-end amp modeling: from data to controllable guitar amplifier models. In: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Rhodes; 2023.
 
-\bibitem{wright2020percep} Wright A, Välimäki V. Perceptual loss function for neural modelling of audio systems. A: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Barcelona; 2020.
+\bibitem{wright2020percep} Wright A, Välimäki V. Perceptual loss function for neural modelling of audio systems. In: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Barcelona; 2020.
 
-\bibitem{yamamoto2020} Yamamoto R, Song E, Kim JM. Parallel WaveGAN: a fast waveform generation model based on generative adversarial networks with multi-resolution spectrogram. A: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Barcelona; 2020. p.~6199--6203.
+\bibitem{yamamoto2020} Yamamoto R, Song E, Kim JM. Parallel WaveGAN: a fast waveform generation model based on generative adversarial networks with multi-resolution spectrogram. In: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Barcelona; 2020. p.~6199--6203.
 
-\bibitem{steinmetz2020} Steinmetz CJ, Reiss JD. auraloss: audio focused loss functions in PyTorch. A: \emph{Digital Music Research Network One-day Workshop (DMRN+15)}. Londres; 2020.
+\bibitem{steinmetz2020} Steinmetz CJ, Reiss JD. auraloss: audio focused loss functions in PyTorch. In: \emph{Digital Music Research Network One-day Workshop (DMRN+15)}. London; 2020.
 
-\bibitem{wright2023} Wright A, Välimäki V, Juvela L. Adversarial guitar amplifier modelling with unpaired data. A: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Rodes; 2023.
+\bibitem{wright2023} Wright A, Välimäki V, Juvela L. Adversarial guitar amplifier modelling with unpaired data. In: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Rhodes; 2023.
 
-\bibitem{itu2001} International Telecommunication Union. Recommendation ITU-R BS.1387-1: Method for objective measurements of perceived audio quality. Ginebra: ITU; 2001.
+\bibitem{itu2001} International Telecommunication Union. Recommendation ITU-R BS.1387-1: Method for objective measurements of perceived audio quality. Geneva: ITU; 2001.
 
-\bibitem{kilgour2019} Kilgour K, Zuluaga M, Roblek D, Sharifi M. Fréchet Audio Distance: a reference-free metric for evaluating music enhancement algorithms. A: \emph{Proceedings of Interspeech 2019}. Graz; 2019.
+\bibitem{kilgour2019} Kilgour K, Zuluaga M, Roblek D, Sharifi M. Fréchet Audio Distance: a reference-free metric for evaluating music enhancement algorithms. In: \emph{Proceedings of Interspeech 2019}. Graz; 2019.
 
-\bibitem{itu2015} International Telecommunication Union. Recommendation ITU-R BS.1534-3: Method for the subjective assessment of intermediate quality level of audio systems. Ginebra: ITU; 2015.
+\bibitem{itu2015} International Telecommunication Union. Recommendation ITU-R BS.1534-3: Method for the subjective assessment of intermediate quality level of audio systems. Geneva: ITU; 2015.
 
-\bibitem{carson2024} Carson A, Wright A, Chowdhury J, Välimäki V, Bilbao S. Sample rate independent recurrent neural networks for audio effects processing. A: \emph{Proceedings of the 27th International Conference on Digital Audio Effects (DAFx24)}. Guildford; 2024.
+\bibitem{carson2024} Carson A, Wright A, Chowdhury J, Välimäki V, Bilbao S. Sample rate independent recurrent neural networks for audio effects processing. In: \emph{Proceedings of the 27th International Conference on Digital Audio Effects (DAFx24)}. Guildford; 2024.
 
-\bibitem{proteus} Bloemer K. Proteus [programari]. GuitarML; GitHub [consultat 26 oct. 2026]. Disponible a: \url{https://github.com/GuitarML/Proteus}
+\bibitem{proteus} Bloemer K. Proteus [software]. GuitarML; GitHub [cited 26 Oct 2026]. Available from: \url{https://github.com/GuitarML/Proteus}
 
-\bibitem{pedroza2022} Pedroza HE, Meza G, Roman IR. EGFxSet: electric guitar tones processed through real effects of distortion, modulation, delay and reverb. A: \emph{Late-Breaking Demo Session, 23rd International Society for Music Information Retrieval Conference (ISMIR)}. Bengaluru; 2022.
+\bibitem{pedroza2022} Pedroza HE, Meza G, Roman IR. EGFxSet: electric guitar tones processed through real effects of distortion, modulation, delay and reverb. In: \emph{Late-Breaking Demo Session, 23rd International Society for Music Information Retrieval Conference (ISMIR)}. Bengaluru; 2022.
 
-\bibitem{wright2025openamp} Wright A, Carson A, Juvela L. Open-Amp: synthetic data framework for audio effect foundation models. A: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Hyderabad; 2025. p.~1--5.
+\bibitem{wright2025openamp} Wright A, Carson A, Juvela L. Open-Amp: synthetic data framework for audio effect foundation models. In: \emph{Proceedings of the IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}. Hyderabad; 2025. p.~1--5.
 
 \bibitem{chowdhury2021} Chowdhury J. RTNeural: fast neural inferencing for real-time systems. arXiv:2106.03037 [preprint]. 2021.
 
 \bibitem{carson2025} Carson A, Välimäki V, Wright A, Bilbao S. Resampling filter design for multirate neural audio effect processing. arXiv:2501.18470 [preprint]. 2025.
 
-\bibitem{quadcortex} Neural DSP Technologies. Quad Cortex [Internet]. [consultat 26 oct. 2026]. Disponible a: \url{https://neuraldsp.com/us/quad-cortex}
+\bibitem{quadcortex} Neural DSP Technologies. Quad Cortex [Internet]. [cited 26 Oct 2026]. Available from: \url{https://neuraldsp.com/us/quad-cortex}
 
 \end{thebibliography}
 \endgroup
 
-\chapter{Annexos}
+\chapter{Annexes}
 
 \end{document}
